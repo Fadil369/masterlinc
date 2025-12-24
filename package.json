@@ -1,0 +1,22 @@
+{
+  "name": "basma",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "apps/workers/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "deploy": "turbo run deploy",
+    "db:migrate": "wrangler d1 execute basma_production --file=./infrastructure/schema.sql",
+    "db:seed": "tsx infrastructure/seed.ts"
+  },
+  "devDependencies": {
+    "turbo": "^1.11.2",
+    "typescript": "^5.3.3",
+    "tsx": "^4.7.0"
+  }
+}

@@ -1,0 +1,71 @@
+
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&family=Orbitron:wght@500;900&family=Rajdhani:wght@300;500;700&family=Noto+Sans+Arabic:wght@300;400;500;600;700&display=swap');
+
+:root {
+  --saudi-green: #006400;
+  --saudi-green-light: #228B22;
+  --gold: #D4AF37;
+  --gold-glow: rgba(212, 175, 55, 0.4);
+  --glass-bg: rgba(255, 255, 255, 0.03);
+  --glass-border: rgba(255, 255, 255, 0.12);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background-color: #050505;
+  color: white;
+  font-family: 'Rajdhani', 'Noto Sans Arabic', sans-serif;
+  overflow-x: hidden;
+  min-height: 100vh;
+}
+
+.saudi-gradient {
+  background: linear-gradient(135deg, var(--saudi-green) 0%, var(--saudi-green-light) 100%);
+}
+
+.glass-morphism {
+  background: var(--glass-bg);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid var(--glass-border);
+}
+
+.gold-shadow {
+  box-shadow: 0 0 20px var(--gold-glow);
+}
+
+.arabic-font {
+  font-family: 'Cairo', 'Noto Sans Arabic', sans-serif;
+}
+
+.orbitron-font {
+  font-family: 'Orbitron', sans-serif;
+}
+
+/* Animations from user insights */
+@keyframes floatCard {
+  0%, 100% { transform: translateY(5px) rotateX(0deg); }
+  50% { transform: translateY(-5px) rotateX(1deg); }
+}
+
+@keyframes pulse-audio {
+  from { transform: scale(0.8); opacity: 0.5; }
+  to { transform: scale(1.4); opacity: 1; }
+}
+
+@keyframes dots {
+  0%, 20% { content: ' .'; }
+  40% { content: ' ..'; }
+  60% { content: ' ...'; }
+  80%, 100% { content: ''; }
+}
+
+.thinking-dots::after {
+  content: ' .';
+  animation: dots 1.5s steps(5, end) infinite;
+}

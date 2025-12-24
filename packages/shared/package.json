@@ -1,0 +1,17 @@
+{
+  "name": "@basma/shared",
+  "version": "1.0.0",
+  "main": "./types.ts",
+  "types": "./types.ts",
+  "exports": {
+    ".": "./types.ts",
+    "./types": "./types.ts",
+    "./ai-service": "./ai-service.ts",
+    "./speech": "./speech.ts",
+    "./logger": "./logger.ts"
+  },
+  "sideEffects": false,
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.27.3"
+  }
+}
