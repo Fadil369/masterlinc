@@ -11,23 +11,25 @@ import {
   CheckCircle,
   XCircle
 } from '@phosphor-icons/react'
-import type { Agent, Message, SystemHealth, Language } from '@/lib/types'
+import type { Agent, Message, SystemHealth, Language, Workflow } from '@/lib/types'
 import { useTranslation } from '@/lib/i18n'
 import { motion } from 'framer-motion'
 
 interface DashboardViewProps {
   agents: Agent[]
   messages: Message[]
+  workflows: Workflow[]
   systemHealth: SystemHealth
   language: Language
 }
 
-export function DashboardView({ agents, messages, systemHealth, language }: DashboardViewProps) {
+export function DashboardView({ agents, messages, workflows, systemHealth, language }: DashboardViewProps) {
   const t = useTranslation(language)
 
   const onlineAgents = agents.filter((a) => a.status === 'online').length
   const offlineAgents = agents.filter((a) => a.status === 'offline').length
   const totalMessages = messages.length
+  const activeWorkflows = workflows.filter((w) => w.status === 'running').length
 
   return (
     <div className="space-y-6">
@@ -52,7 +54,7 @@ export function DashboardView({ agents, messages, systemHealth, language }: Dash
         />
         <MetricCard
           title={t.dashboard.activeWorkflows}
-          value={0}
+          value={activeWorkflows}
           icon={<ChartLineUp size={24} weight="duotone" />}
           color="warning"
         />

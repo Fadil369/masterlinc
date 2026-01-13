@@ -14,12 +14,15 @@ import { mockAgents, mockMessages, mockSystemHealth } from '@/lib/mock-data'
 import { useTranslation } from '@/lib/i18n'
 import type { Language, Agent, Message, SystemHealth, Workflow } from '@/lib/types'
 import { toast } from 'sonner'
+import { masterlincValidator } from '@/lib/validation/masterlinc-validator'
+import { asToastText } from '@/lib/validation/errors'
+import { masterlincAggregator } from '@/lib/aggregation'
 
 function App() {
   const [language, setLanguage] = useKV<Language>('masterlinc-language', 'en')
   const [agents, setAgents] = useKV<Agent[]>('masterlinc-agents', mockAgents)
   const [messages, setMessages] = useKV<Message[]>('masterlinc-messages', mockMessages)
-  const [workflows] = useKV<Workflow[]>('masterlinc-workflows', [])
+  const [workflows, setWorkflows] = useKV<Workflow[]>('masterlinc-workflows', [])
   const [systemHealth, setSystemHealth] = useState<SystemHealth>(mockSystemHealth)
   const [activeTab, setActiveTab] = useState('dashboard')
 
@@ -42,6 +45,15 @@ function App() {
           const shouldUpdate = Math.random() > 0.7
           if (!shouldUpdate) return agent
 
+          const now = Date.now()
+          const latencyMs = Math.floor(20 + Math.random() * 220)
+          masterlincAggregator.ingestHeartbeat({
+            agent_id: agent.agent_id,
+            ts: now,
+            latency_ms: latencyMs,
+            status: agent.status
+          })
+
           return {
             ...agent,
             last_heartbeat: new Date().toISOString(),
@@ -60,6 +72,11 @@ function App() {
     return () => clearInterval(interval)
   }, [setAgents])
 
+  useEffect(() => {
+    // keep a time-series of system health for aggregation
+    masterlincAggregator.ingestSystemHealthFromModel(systemHealth, Date.now())
+  }, [systemHealth])
+
   const toggleLanguage = () => {
     setLanguage((currentLang) => (currentLang === 'ar' ? 'en' : 'ar'))
   }
@@ -77,17 +94,110 @@ function App() {
   }
 
   const handleSendMessage = (senderId: string, receiverId: string, content: string) => {
+    let parsed: Record<string, unknown>
+    try {
+      parsed = JSON.parse(content) as Record<string, unknown>
+    } catch {
+      toast.error(currentLanguage === 'ar'
+        ? 'تنسيق JSON غير صالح. يرجى تصحيح المحتوى والمحاولة مرة أخرى.'
+        : 'Invalid JSON. Please fix the payload and try again.')
+      return
+    }
+
+    const messageId = `msg_${Date.now()}_${Math.random().toString(16).slice(2)}`
     const newMessage: Message = {
-      message_id: `msg_${Date.now()}`,
+      message_id: messageId,
       sender_id: senderId,
       receiver_id: receiverId,
       content_type: 'application/json',
-      content: JSON.parse(content),
+      content: parsed,
       timestamp: new Date().toISOString(),
-      status: 'delivered'
+      status: 'pending'
     }
 
-    setMessages((prevMessages) => [newMessage, ...(prevMessages ?? [])])
+    const validation = masterlincValidator.validate(newMessage, currentLanguage)
+    if (!validation.ok) {
+      toast.error(asToastText(validation, currentLanguage))
+      return
+    }
+
+    setMessages((prevMessages) => [validation.data, ...(prevMessages ?? [])])
+
+    // Simulate delivery acknowledgement (until real backend/WebSocket integration exists)
+    setTimeout(() => {
+      setMessages((prev) =>
+        (prev ?? []).map((m) => (m.message_id === messageId ? { ...m, status: 'delivered' } : m))
+      )
+    }, 350)
+  }
+
+  const handleCreateWorkflow = (workflow: Workflow) => {
+    setWorkflows((prev) => [workflow, ...(prev ?? [])])
+    toast.success(currentLanguage === 'ar' ? 'تم إنشاء سير العمل' : 'Workflow created')
+  }
+
+  const handleRunWorkflow = (workflowId: string) => {
+    const wf = (currentWorkflows ?? []).find((w) => w.workflow_id === workflowId)
+    if (!wf) return
+
+    // Signature for pattern tracking (sequence of agent ids)
+    const stepSig = wf.steps.map((s) => s.agent_id).join('>')
+    masterlincAggregator.ingestWorkflowEvent({ type: 'started', workflow: wf, stepAgentSignature: stepSig })
+
+    setWorkflows((prev) =>
+      (prev ?? []).map((w) => (w.workflow_id === workflowId ? { ...w, status: 'running' } : w))
+    )
+
+    // MASTERLINC executes steps by sending an execution command to each agent
+    const orchestratorId = 'masterlinc'
+
+    wf.steps.forEach((step, index) => {
+      const delayMs = index * 900
+      setTimeout(() => {
+        const payload = {
+          type: 'workflow_step_execute',
+          workflow_id: wf.workflow_id,
+          step_id: step.step_id,
+          action: step.action,
+          parameters: step.parameters,
+          timeout_sec: step.timeout
+        }
+
+        const msgId = `msg_${Date.now()}_${index}_${Math.random().toString(16).slice(2)}`
+        const msg: Message = {
+          message_id: msgId,
+          sender_id: orchestratorId,
+          receiver_id: step.agent_id,
+          content_type: 'application/json',
+          content: payload,
+          timestamp: new Date().toISOString(),
+          status: 'pending'
+        }
+
+        const validation = masterlincValidator.validate(msg, currentLanguage)
+        if (!validation.ok) {
+          toast.error(asToastText(validation, currentLanguage))
+          // do not enqueue invalid messages
+          return
+        }
+
+        setMessages((prev) => [validation.data, ...(prev ?? [])])
+        setTimeout(() => {
+          setMessages((prev) =>
+            (prev ?? []).map((m) => (m.message_id === msgId ? { ...m, status: 'delivered' } : m))
+          )
+        }, 400)
+      }, delayMs)
+    })
+
+    const finishDelay = wf.steps.length * 900 + 450
+    setTimeout(() => {
+      setWorkflows((prev) =>
+        (prev ?? []).map((w) => (w.workflow_id === workflowId ? { ...w, status: 'completed' } : w))
+      )
+      masterlincAggregator.ingestWorkflowEvent({ type: 'completed', workflow: wf, stepAgentSignature: stepSig })
+      toast.success(currentLanguage === 'ar' ? 'اكتمل سير العمل' : 'Workflow completed')
+    }, finishDelay)
   }
 
   const handleClearMessages = () => {
@@ -148,6 +258,7 @@ function App() {
             <DashboardView
               agents={currentAgents}
               messages={currentMessages}
+              workflows={currentWorkflows}
               systemHealth={systemHealth}
               language={currentLanguage}
             />
@@ -172,7 +283,13 @@ function App() {
           </TabsContent>
 
           <TabsContent value="workflows" className="mt-0">
-            <WorkflowsView workflows={currentWorkflows} language={currentLanguage} />
+            <WorkflowsView
+              workflows={currentWorkflows}
+              agents={currentAgents}
+              language={currentLanguage}
+              onCreateWorkflow={handleCreateWorkflow}
+              onRunWorkflow={handleRunWorkflow}
+            />
           </TabsContent>
         </Tabs>
       </main>

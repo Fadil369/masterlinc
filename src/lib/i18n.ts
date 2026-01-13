@@ -54,8 +54,17 @@ export const translations = {
     workflows: {
       title: 'Workflows',
       createWorkflow: 'Create Workflow',
+      runWorkflow: 'Run',
+      stopWorkflow: 'Stop',
       workflowName: 'Workflow Name',
+      workflowDescription: 'Description (optional)',
       steps: 'Steps',
+      addStep: 'Add step',
+      removeStep: 'Remove',
+      stepAgent: 'Agent',
+      stepAction: 'Action',
+      stepParams: 'Parameters (JSON)',
+      stepTimeout: 'Timeout (sec)',
       status: 'Status',
       noWorkflows: 'No workflows created',
       running: 'Running',
@@ -80,6 +89,9 @@ export const translations = {
       delete: 'Delete',
       edit: 'Edit',
       view: 'View Details'
+    },
+    errors: {
+      invalidJson: 'Invalid JSON. Please fix the payload and try again.'
     },
     time: {
       now: 'just now',
@@ -142,8 +154,17 @@ export const translations = {
     workflows: {
       title: 'سير العمل',
       createWorkflow: 'إنشاء سير عمل',
+      runWorkflow: 'تشغيل',
+      stopWorkflow: 'إيقاف',
       workflowName: 'اسم سير العمل',
+      workflowDescription: 'الوصف (اختياري)',
       steps: 'الخطوات',
+      addStep: 'إضافة خطوة',
+      removeStep: 'حذف',
+      stepAgent: 'الوكيل',
+      stepAction: 'الإجراء',
+      stepParams: 'المعلمات (JSON)',
+      stepTimeout: 'المهلة (ثانية)',
       status: 'الحالة',
       noWorkflows: 'لم يتم إنشاء سير عمل',
       running: 'قيد التشغيل',
@@ -168,6 +189,9 @@ export const translations = {
       delete: 'حذف',
       edit: 'تعديل',
       view: 'عرض التفاصيل'
+    },
+    errors: {
+      invalidJson: 'تنسيق JSON غير صالح. يرجى تصحيح المحتوى والمحاولة مرة أخرى.'
     },
     time: {
       now: 'الآن',
