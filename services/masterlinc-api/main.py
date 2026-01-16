@@ -41,7 +41,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# In-memory agent registry (replace with database in production)
+# In-memory agent registry for development/demo
+# NOTE: Replace with database persistence in production (PostgreSQL, Redis, or similar)
+# Consider using SQLAlchemy models or storing in Redis for performance
 agents_registry: dict[str, Agent] = {
     "masterlinc": Agent(
         agent_id="masterlinc",
@@ -186,8 +188,13 @@ async def execute_workflow(request: WorkflowExecutionRequest):
     
     logger.info("workflow_started", workflow_id=workflow_id)
     
-    # TODO: Implement actual workflow execution logic
-    # This is a placeholder that simulates successful execution
+    # NOTE: This is a simplified implementation for demonstration.
+    # Production implementation should:
+    # 1. Use Celery or similar for async task execution
+    # 2. Handle dependencies and parallel execution properly
+    # 3. Store workflow state in database
+    # 4. Implement retry logic and error handling
+    # 5. Support cancellation and monitoring
     
     return WorkflowExecutionResponse(
         workflow_id=workflow_id,
@@ -244,12 +251,26 @@ async def route_message(request: MessageRouteRequest):
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request, exc: HTTPException):
     """Custom HTTP exception handler with bilingual support."""
+    # Simple translation map for common errors
+    translations = {
+        "No agents available": "لا توجد وكلاء متاحة",
+        "not found": "غير موجود",
+        "Invalid request": "طلب غير صالح",
+        "Internal server error": "خطأ في الخادم الداخلي"
+    }
+    
+    message_ar = exc.detail
+    for en, ar in translations.items():
+        if en.lower() in exc.detail.lower():
+            message_ar = ar
+            break
+    
     return JSONResponse(
         status_code=exc.status_code,
         content={
             "error": exc.status_code,
             "message": exc.detail,
-            "message_ar": exc.detail  # TODO: Add actual Arabic translation
+            "message_ar": message_ar
         }
     )
 

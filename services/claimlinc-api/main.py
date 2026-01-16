@@ -187,8 +187,13 @@ async def analyze_rejection(request: RejectionAnalysisRequest):
     
     analysis_id = str(uuid.uuid4())
     
-    # TODO: Implement actual AI-powered analysis using LangChain
-    # This is a placeholder with sample data
+    # NOTE: This is a placeholder implementation for demonstration.
+    # Production implementation should:
+    # 1. Use LangChain with GPT-4 for actual AI analysis
+    # 2. Integrate with NPHIES error code database
+    # 3. Analyze claim history and patterns
+    # 4. Provide evidence-based recommendations
+    # 5. Include confidence scoring based on historical data
     
     root_cause = f"Rejection code {request.rejection_code}: Missing required documentation"
     recommendations = [
@@ -228,8 +233,13 @@ async def analyze_batch(request: BatchAnalysisRequest):
     
     analysis_id = str(uuid.uuid4())
     
-    # TODO: Implement actual pattern detection logic
-    # This is a placeholder with sample data
+    # NOTE: This is a placeholder implementation for demonstration.
+    # Production implementation should:
+    # 1. Implement actual pattern detection algorithms
+    # 2. Use machine learning for anomaly detection
+    # 3. Analyze temporal patterns and trends
+    # 4. Calculate actual financial impact from claim data
+    # 5. Provide actionable insights based on pattern analysis
     
     patterns = [
         {

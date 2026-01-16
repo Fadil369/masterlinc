@@ -38,6 +38,13 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     jwt_access_token_expire_minutes: int = 30
     
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        # Validate that critical secrets have been changed from defaults
+        if self.jwt_secret == "your-secret-key-change-in-production":
+            if self.environment == "production":
+                raise ValueError("JWT_SECRET must be changed from default value in production!")
+    
     # Service Endpoints
     claimlinc_api_url: str = "http://claimlinc-api:8001"
     doctorlinc_api_url: str = "http://doctorlinc-api:8002"

@@ -1,7 +1,7 @@
 #!/bin/bash
 # Integration test script for MASTERLINC backend services
 
-set -e
+set -euo pipefail
 
 echo "🚀 MASTERLINC Backend Integration Tests"
 echo "========================================"
