@@ -1,50 +1,57 @@
 {
-    "name": "Masterlinc Dev Container",
-    "image": "mcr.microsoft.com/devcontainers/typescript-node:1-20-bookworm",
-
-    "features": {
-          "ghcr.io/devcontainers/features/python:1": {
-                  "version": "3.11"
-          },
-          "ghcr.io/devcontainers/features/docker-in-docker:2": {
-                  "version": "latest"
-          },
-          "ghcr.io/devcontainers/features/git:1": {
-                  "version": "latest"
-          }
+  "name": "Masterlinc Dev Container",
+  "image": "mcr.microsoft.com/devcontainers/typescript-node:1-22-bookworm",
+  "hostRequirements": {
+    "storage": "32gb",
+    "memory": "8gb",
+    "cpus": 4
+  },
+  "features": {
+    "ghcr.io/devcontainers/features/python:1": {
+      "version": "3.11"
     },
-
-    "customizations": {
-          "vscode": {
-                  "extensions": [
-                            "GitHub.copilot",
-                            "GitHub.copilot-chat",
-                            "dbaeumer.vscode-eslint",
-                            "esbenp.prettier-vscode",
-                            "ms-python.python",
-                            "ms-python.vscode-pylance",
-                            "ms-azuretools.vscode-docker",
-                            "eamodio.gitlens",
-                            "firsttris.vscode-jest-runner",
-                            "orta.vscode-jest"
-                  ],
-                  "settings": {
-                            "editor.formatOnSave": true,
-                            "editor.defaultFormatter": "esbenp.prettier-vscode",
-                            "editor.codeActionsOnSave": {
-                                        "source.fixAll.eslint": true
-                            },
-                            "typescript.tsdk": "node_modules/typescript/lib",
-                            "python.linting.enabled": true,
-                            "python.linting.pylintEnabled": true,
-                            "python.formatting.provider": "black"
-                  }
-          }
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {
+      "version": "latest"
     },
-
-    "forwardPorts": [3000, 5000, 8080],
-
-    "postCreateCommand": "npm install && pip install -r requirements.txt || true",
-
-    "remoteUser": "node"
+    "ghcr.io/devcontainers/features/git:1": {
+      "version": "latest"
+    },
+    "ghcr.io/devcontainers/features/sshd:1": {
+      "version": "latest"
+    }
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "GitHub.copilot",
+        "GitHub.copilot-chat",
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "ms-azuretools.vscode-docker",
+        "eamodio.gitlens",
+        "firsttris.vscode-jest-runner",
+        "orta.vscode-jest"
+      ],
+      "settings": {
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "editor.codeActionsOnSave": {
+          "source.fixAll.eslint": true
+        },
+        "typescript.tsdk": "node_modules/typescript/lib",
+        "python.linting.enabled": true,
+        "python.linting.pylintEnabled": true,
+        "python.formatting.provider": "black"
+      }
+    },
+    "codespaces": { 
+      "onStopCommand": "bash shutdown.sh"
+    }
+  },
+  "forwardPorts": [3000, 4000, 4173, 5000, 8080, 9000, 13000],
+  "onCreateCommand": "bash .devcontainer/onCreate.sh",
+  "postStartCommand": "bash .devcontainer/postStartCommand.sh",
+  "remoteUser": "node"
 }
