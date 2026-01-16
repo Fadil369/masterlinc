@@ -1,0 +1,32 @@
+# BrainSAIT CLAIMLINC API Requirements
+
+# Core Framework
+fastapi==0.109.2
+uvicorn[standard]==0.27.1
+pydantic==2.6.1
+pydantic-settings==2.1.0
+
+# AI/LLM
+langchain==0.1.8
+langchain-openai==0.0.5
+openai==1.12.0
+
+# HTTP Client
+httpx==0.26.0
+
+# Database
+asyncpg==0.29.0
+sqlalchemy==2.0.25
+
+# Redis
+redis==5.0.1
+
+# FHIR
+fhir.resources==7.1.0
+
+# Validation
+jsonschema==4.21.1
+
+# Utilities
+python-dotenv==1.0.1
+structlog==24.1.0

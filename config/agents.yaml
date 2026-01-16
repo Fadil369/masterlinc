@@ -1,0 +1,82 @@
+# BrainSAIT MASTERLINC Agent Registry Configuration
+
+agents:
+  masterlinc:
+    name: "MasterLinc"
+    name_ar: "ماستر لينك"
+    endpoint: "http://masterlinc-api:8000"
+    capabilities:
+      - orchestration
+      - routing
+      - workflows
+    priority: 0
+    category: "orchestration"
+    description: "Central orchestration brain for agent coordination"
+    description_ar: "دماغ التنسيق المركزي لتنسيق الوكلاء"
+    
+  claimlinc:
+    name: "ClaimLinc"
+    name_ar: "كلايم لينك"
+    endpoint: "http://claimlinc-api:8001"
+    capabilities:
+      - validation
+      - analysis
+      - patterns
+    priority: 1
+    category: "healthcare"
+    description: "Intelligent claims processing and validation"
+    description_ar: "معالجة والتحقق الذكي من المطالبات"
+    
+  doctorlinc:
+    name: "DoctorLinc"
+    name_ar: "دكتور لينك"
+    endpoint: "http://doctorlinc-api:8002"
+    capabilities:
+      - clinical_support
+      - diagnosis
+      - treatment_recommendations
+    priority: 2
+    category: "healthcare"
+    description: "Clinical decision support and medical knowledge"
+    description_ar: "دعم القرار السريري والمعرفة الطبية"
+    
+  policylinc:
+    name: "PolicyLinc"
+    name_ar: "بوليسي لينك"
+    endpoint: "http://policylinc-api:8003"
+    capabilities:
+      - policy_interpretation
+      - coverage_verification
+      - authorization_lookup
+    priority: 3
+    category: "business"
+    description: "Payer policy interpretation and coverage verification"
+    description_ar: "تفسير سياسة الدافع والتحقق من التغطية"
+    
+  devlinc:
+    name: "DevLinc"
+    name_ar: "ديف لينك"
+    endpoint: "http://devlinc-api:8004"
+    capabilities:
+      - code_generation
+      - code_review
+      - test_generation
+      - documentation
+    priority: 4
+    category: "automation"
+    description: "Development automation and code generation"
+    description_ar: "أتمتة التطوير وتوليد التعليمات البرمجية"
+    
+  authlinc:
+    name: "AuthLinc"
+    name_ar: "أوث لينك"
+    endpoint: "http://authlinc-api:8005"
+    capabilities:
+      - authentication
+      - authorization
+      - rbac
+      - token_management
+    priority: 5
+    category: "security"
+    description: "Authentication and authorization gateway"
+    description_ar: "بوابة المصادقة والتفويض"

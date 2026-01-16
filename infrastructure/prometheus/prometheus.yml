@@ -1,0 +1,71 @@
+# Prometheus Configuration for MASTERLINC
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'masterlinc'
+    environment: 'development'
+
+scrape_configs:
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+  
+  # MasterLinc API
+  - job_name: 'masterlinc-api'
+    static_configs:
+      - targets: ['masterlinc-api:8000']
+    metrics_path: '/metrics'
+  
+  # ClaimLinc API
+  - job_name: 'claimlinc-api'
+    static_configs:
+      - targets: ['claimlinc-api:8001']
+    metrics_path: '/metrics'
+  
+  # DoctorLinc API
+  - job_name: 'doctorlinc-api'
+    static_configs:
+      - targets: ['doctorlinc-api:8002']
+    metrics_path: '/metrics'
+  
+  # PolicyLinc API
+  - job_name: 'policylinc-api'
+    static_configs:
+      - targets: ['policylinc-api:8003']
+    metrics_path: '/metrics'
+  
+  # DevLinc API
+  - job_name: 'devlinc-api'
+    static_configs:
+      - targets: ['devlinc-api:8004']
+    metrics_path: '/metrics'
+  
+  # AuthLinc API
+  - job_name: 'authlinc-api'
+    static_configs:
+      - targets: ['authlinc-api:8005']
+    metrics_path: '/metrics'
+  
+  # Audit Service
+  - job_name: 'audit-service'
+    static_configs:
+      - targets: ['audit-service:8006']
+    metrics_path: '/metrics'
+  
+  # PostgreSQL
+  - job_name: 'postgres'
+    static_configs:
+      - targets: ['postgres:5432']
+  
+  # Redis
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis:6379']
+  
+  # FHIR Server
+  - job_name: 'fhir-server'
+    static_configs:
+      - targets: ['fhir-server:8080']
