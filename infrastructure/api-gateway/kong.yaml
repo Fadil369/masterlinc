@@ -1,0 +1,186 @@
+# Kong Declarative Configuration for MASTERLINC
+
+_format_version: "3.0"
+
+services:
+  - name: masterlinc-orchestrator
+    url: http://masterlinc-api:8000
+    tags:
+      - orchestration
+    routes:
+      - name: orchestrator-routes
+        paths:
+          - /api/v1/orchestrator
+          - /api/v1/delegate
+          - /api/v1/workflow
+          - /api/v1/message
+          - /api/v1/agents
+        methods:
+          - GET
+          - POST
+          - PUT
+          - DELETE
+        strip_path: false
+        preserve_host: true
+    plugins:
+      - name: rate-limiting
+        config:
+          minute: 100
+          hour: 5000
+          policy: local
+      - name: cors
+        config:
+          origins:
+            - "*"
+          methods:
+            - GET
+            - POST
+            - PUT
+            - DELETE
+            - OPTIONS
+          headers:
+            - Authorization
+            - Content-Type
+          exposed_headers:
+            - X-Request-ID
+          credentials: true
+          max_age: 3600
+      - name: request-id
+        config:
+          header_name: X-Request-ID
+      - name: prometheus
+        config:
+          per_consumer: true
+
+  - name: claimlinc-agent
+    url: http://claimlinc-api:8001
+    tags:
+      - healthcare
+      - claims
+    routes:
+      - name: claimlinc-routes
+        paths:
+          - /api/v1/validate
+          - /api/v1/analyze
+          - /api/v1/batch
+        methods:
+          - GET
+          - POST
+        strip_path: false
+    plugins:
+      - name: rate-limiting
+        config:
+          minute: 200
+          hour: 10000
+      - name: cors
+        config:
+          origins:
+            - "*"
+          credentials: true
+      - name: prometheus
+
+  - name: fhir-server
+    url: http://fhir-server:8080
+    tags:
+      - fhir
+      - healthcare
+    routes:
+      - name: fhir-routes
+        paths:
+          - /fhir
+        methods:
+          - GET
+          - POST
+          - PUT
+          - DELETE
+        strip_path: false
+    plugins:
+      - name: rate-limiting
+        config:
+          minute: 500
+          hour: 20000
+      - name: cors
+        config:
+          origins:
+            - "*"
+          credentials: true
+
+  - name: audit-service
+    url: http://audit-service:8006
+    tags:
+      - audit
+      - compliance
+    routes:
+      - name: audit-routes
+        paths:
+          - /api/v1/audit
+          - /api/v1/events
+        methods:
+          - GET
+          - POST
+        strip_path: false
+    plugins:
+      - name: rate-limiting
+        config:
+          minute: 1000
+          hour: 50000
+      - name: ip-restriction
+        config:
+          allow:
+            - 10.0.0.0/8
+            - 172.16.0.0/12
+            - 192.168.0.0/16
+
+plugins:
+  - name: jwt
+    config:
+      key_claim_name: iss
+      secret_is_base64: false
+  
+  - name: request-transformer
+    config:
+      add:
+        headers:
+          - "X-Gateway: Kong"
+          - "X-Environment: production"
+  
+  - name: response-transformer
+    config:
+      add:
+        headers:
+          - "X-Content-Type-Options: nosniff"
+          - "X-Frame-Options: DENY"
+          - "X-XSS-Protection: 1; mode=block"
+
+upstreams:
+  - name: masterlinc-upstream
+    algorithm: round-robin
+    healthchecks:
+      active:
+        healthy:
+          interval: 10
+          successes: 2
+        unhealthy:
+          interval: 10
+          http_failures: 3
+        http_path: /health
+        timeout: 5
+    targets:
+      - target: masterlinc-api:8000
+        weight: 100
+
+  - name: claimlinc-upstream
+    algorithm: round-robin
+    healthchecks:
+      active:
+        healthy:
+          interval: 10
+          successes: 2
+        unhealthy:
+          interval: 10
+          http_failures: 3
+        http_path: /health
+        timeout: 5
+    targets:
+      - target: claimlinc-api:8001
+        weight: 100

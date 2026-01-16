@@ -1,0 +1,67 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: masterlinc-service
+  namespace: masterlinc
+  labels:
+    app: masterlinc-api
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8000
+    targetPort: 8000
+    protocol: TCP
+    name: http
+  selector:
+    app: masterlinc-api
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: claimlinc-service
+  namespace: masterlinc
+  labels:
+    app: claimlinc-api
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8001
+    targetPort: 8001
+    protocol: TCP
+    name: http
+  selector:
+    app: claimlinc-api
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-service
+  namespace: masterlinc
+  labels:
+    app: postgres
+spec:
+  type: ClusterIP
+  ports:
+  - port: 5432
+    targetPort: 5432
+    protocol: TCP
+    name: postgres
+  selector:
+    app: postgres
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-service
+  namespace: masterlinc
+  labels:
+    app: redis
+spec:
+  type: ClusterIP
+  ports:
+  - port: 6379
+    targetPort: 6379
+    protocol: TCP
+    name: redis
+  selector:
+    app: redis

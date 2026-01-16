@@ -1,0 +1,45 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "nphies-client"
+version = "1.0.0"
+description = "Python client for Saudi Arabia NPHIES (National Platform for Health Information Exchange)"
+authors = [
+    {name = "BrainSAIT", email = "info@brainsait.com"}
+]
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "MIT"}
+keywords = ["nphies", "fhir", "healthcare", "saudi-arabia"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Healthcare Industry",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+
+dependencies = [
+    "httpx>=0.26.0",
+    "pydantic>=2.6.0",
+    "fhir.resources>=7.1.0",
+    "tenacity>=8.2.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-asyncio>=0.21.0",
+    "pytest-cov>=4.1.0",
+    "black>=23.0.0",
+    "mypy>=1.5.0",
+]
+
+[tool.setuptools]
+packages = ["nphies_client"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"

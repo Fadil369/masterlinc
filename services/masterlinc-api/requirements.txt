@@ -1,0 +1,40 @@
+# BrainSAIT MASTERLINC API Requirements
+
+# Core Framework
+fastapi==0.109.2
+uvicorn[standard]==0.27.1
+pydantic==2.6.1
+pydantic-settings==2.1.0
+
+# AI/LLM
+langchain==0.1.8
+langchain-openai==0.0.5
+langchain-anthropic==0.0.1
+openai==1.12.0
+anthropic==0.18.1
+
+# HTTP Client
+httpx==0.26.0
+aiohttp==3.13.3
+
+# Database
+asyncpg==0.29.0
+sqlalchemy==2.0.25
+alembic==1.13.1
+
+# Redis
+redis==5.0.1
+aioredis==2.0.1
+
+# Security
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+python-multipart==0.0.18
+
+# FHIR
+fhir.resources==7.1.0
+
+# Utilities
+python-dotenv==1.0.1
+structlog==24.1.0
+tenacity==8.2.3

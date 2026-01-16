@@ -1,0 +1,91 @@
+# BrainSAIT MASTERLINC RBAC Configuration
+# Role-Based Access Control for healthcare compliance
+
+roles:
+  doctor:
+    name: "Doctor"
+    name_ar: "طبيب"
+    permissions:
+      - resource: "patient"
+        actions: ["read", "create", "update"]
+      - resource: "claim"
+        actions: ["read", "create", "update"]
+      - resource: "diagnosis"
+        actions: ["read", "create", "update"]
+      - resource: "treatment"
+        actions: ["read", "create", "update"]
+      - resource: "workflow"
+        actions: ["read", "execute"]
+      - resource: "agent"
+        actions: ["read"]
+    
+  nurse:
+    name: "Nurse"
+    name_ar: "ممرضة"
+    permissions:
+      - resource: "patient"
+        actions: ["read", "update"]
+      - resource: "claim"
+        actions: ["read"]
+      - resource: "diagnosis"
+        actions: ["read"]
+      - resource: "treatment"
+        actions: ["read", "update"]
+      - resource: "workflow"
+        actions: ["read", "execute"]
+      - resource: "agent"
+        actions: ["read"]
+    
+  admin:
+    name: "Administrator"
+    name_ar: "مسؤول"
+    permissions:
+      - resource: "patient"
+        actions: ["read", "create", "update", "delete"]
+      - resource: "claim"
+        actions: ["read", "create", "update", "delete"]
+      - resource: "diagnosis"
+        actions: ["read", "create", "update", "delete"]
+      - resource: "treatment"
+        actions: ["read", "create", "update", "delete"]
+      - resource: "workflow"
+        actions: ["read", "create", "update", "delete", "execute"]
+      - resource: "agent"
+        actions: ["read", "create", "update", "delete"]
+      - resource: "user"
+        actions: ["read", "create", "update", "delete"]
+      - resource: "audit"
+        actions: ["read"]
+    
+  researcher:
+    name: "Researcher"
+    name_ar: "باحث"
+    permissions:
+      - resource: "patient"
+        actions: ["read"]  # De-identified data only
+      - resource: "claim"
+        actions: ["read"]  # Aggregated data only
+      - resource: "diagnosis"
+        actions: ["read"]
+      - resource: "treatment"
+        actions: ["read"]
+      - resource: "analytics"
+        actions: ["read", "execute"]
+
+resources:
+  - patient
+  - claim
+  - diagnosis
+  - treatment
+  - workflow
+  - agent
+  - user
+  - audit
+  - analytics
+
+actions:
+  - read
+  - create
+  - update
+  - delete
+  - execute
