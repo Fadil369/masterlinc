@@ -69,8 +69,9 @@ export const register = async (req, res) => {
       },
     });
 
-    // Create session
-    const sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    // Create session with cryptographically secure random ID
+    const crypto = await import('crypto');
+    const sessionId = `session_${Date.now()}_${crypto.randomBytes(16).toString('hex')}`;
     const token = generateToken({ userId: user.id, sessionId });
     const refreshToken = generateRefreshToken({ userId: user.id, sessionId });
 
