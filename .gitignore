@@ -49,3 +49,14 @@ prisma/migrations/**/migration_lock.toml
 **/agent-eval-report*
 pids
 .file-manifest
+
+# Turbo
+.turbo
+
+# pnpm
+pnpm-lock.yaml
+
+# Build outputs
+apps/*/dist
+packages/*/dist
+services/*/dist

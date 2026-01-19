@@ -1,5 +1,5 @@
 {
-  "name": "masterlinc-backend",
+  "name": "@brainsait/backend",
   "version": "1.0.0",
   "description": "MASTERLINC Backend API for user management and analytics",
   "main": "src/server.js",
