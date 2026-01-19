@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MASTERLINC • Universal AI Intelligence</title>
+
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="MASTERLINC - Universal AI Intelligence Platform for Healthcare, Business, Development, and Personal Growth">
+    <meta name="keywords" content="AI, Healthcare, Business Intelligence, Development Tools, Personal Growth">
+    <meta name="author" content="MASTERLINC">
+
+    <!-- Open Graph Meta Tags -->
+    <meta property="og:title" content="MASTERLINC • Universal AI Intelligence">
+    <meta property="og:description" content="Specialized AI assistance across Healthcare, Business, Development, and Personal Growth domains">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://fadil369.github.io/masterlinc/">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@300;400;500;600;700;800&family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Styles -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="./assets/css/main.css">
+</head>
+<body>
+    <!-- Background -->
+    <div class="mesh-bg">
+        <div class="mesh-gradient">
+            <div class="gradient-sphere sphere-1"></div>
+            <div class="gradient-sphere sphere-2"></div>
+            <div class="gradient-sphere sphere-3"></div>
+            <div class="gradient-sphere sphere-4"></div>
+        </div>
+    </div>
+    <div class="noise"></div>
+
+    <!-- App -->
+    <div class="app-grid">
+        <!-- Top Bar -->
+        <header class="top-bar glass-strong">
+            <div class="brand">
+                <div class="brand-logo">M</div>
+                <div class="brand-text">
+                    <h1>MASTERLINC</h1>
+                    <div class="brand-subtitle">Universal AI Intelligence Platform</div>
+                </div>
+            </div>
+            <div class="top-controls">
+                <div class="api-status">
+                    <span class="status-dot"></span>
+                    <span id="api-status-text">Connecting...</span>
+                </div>
+                <div class="user-menu" id="user-menu">
+                    <!-- User menu will be populated by JS -->
+                </div>
+                <div class="lang-toggle">
+                    <button class="lang-btn active" data-lang="en">EN</button>
+                    <button class="lang-btn" data-lang="ar">عربي</button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Left Sidebar -->
+        <aside class="sidebar">
+            <div class="domain-card glass active" data-domain="healthcare">
+                <div class="domain-icon" style="background: linear-gradient(135deg, #f472b6, #a78bfa);">🏥</div>
+                <div class="domain-title">Healthcare & Medical</div>
+                <div class="domain-desc">Clinical support, claims management, diagnostics, compliance</div>
+                <span class="domain-count">5 Agents</span>
+            </div>
+
+            <div class="domain-card glass" data-domain="business">
+                <div class="domain-icon" style="background: linear-gradient(135deg, #60a5fa, #22d3ee);">📊</div>
+                <div class="domain-title">Business & Operations</div>
+                <div class="domain-desc">Strategy, finance, marketing, HR, operations</div>
+                <span class="domain-count">5 Agents</span>
+            </div>
+
+            <div class="domain-card glass" data-domain="development">
+                <div class="domain-icon" style="background: linear-gradient(135deg, #4ade80, #22d3ee);">💻</div>
+                <div class="domain-title">Development & Tech</div>
+                <div class="domain-desc">Coding, architecture, DevOps, AI/ML, security</div>
+                <span class="domain-count">5 Agents</span>
+            </div>
+
+            <div class="domain-card glass" data-domain="personal">
+                <div class="domain-icon" style="background: linear-gradient(135deg, #fb923c, #fbbf24);">🎯</div>
+                <div class="domain-title">Personal Growth</div>
+                <div class="domain-desc">Learning, productivity, wellness, creativity</div>
+                <span class="domain-count">5 Agents</span>
+            </div>
+        </aside>
+
+        <!-- Main Chat -->
+        <main class="chat-main">
+            <div class="chat-header glass-strong">
+                <h2 id="domain-title">Healthcare & Medical Intelligence</h2>
+                <p id="domain-subtitle">Specialized AI assistance for clinical, administrative, and compliance tasks</p>
+            </div>
+
+            <div class="messages glass" id="messages-container">
+                <!-- Messages will be inserted here -->
+            </div>
+
+            <div class="input-area glass-strong">
+                <div class="input-wrapper">
+                    <textarea
+                        id="message-input"
+                        class="input-field"
+                        placeholder="Ask anything about healthcare, business, development, or personal growth..."
+                        rows="1"
+                    ></textarea>
+                    <button class="send-btn" id="send-button">
+                        <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </main>
+
+        <!-- Right Panel -->
+        <aside class="right-panel">
+            <div class="panel-card glass-strong">
+                <div class="panel-title">
+                    <span>⚡</span>
+                    Quick Actions
+                </div>
+                <div id="quick-actions-container">
+                    <!-- Will be populated dynamically -->
+                </div>
+            </div>
+
+            <div class="panel-card glass">
+                <div class="panel-title">
+                    <span>💡</span>
+                    Suggested Prompts
+                </div>
+                <div id="prompts-container">
+                    <!-- Will be populated dynamically -->
+                </div>
+            </div>
+
+            <div class="panel-card glass">
+                <div class="panel-title">
+                    <span>🤖</span>
+                    Active Agent
+                </div>
+                <div style="font-size: 0.8125rem; line-height: 1.6; color: var(--text-secondary);">
+                    <strong style="display: block; margin-bottom: 0.5rem; color: var(--text-primary);" id="agent-name">MASTERLINC</strong>
+                    <p id="agent-desc">Universal orchestration hub routing queries to specialized AI agents across all domains.</p>
+                </div>
+            </div>
+
+            <div class="panel-card glass" id="stats-panel">
+                <div class="panel-title">
+                    <span>📊</span>
+                    Usage Stats
+                </div>
+                <div id="stats-container" class="stats-content">
+                    <!-- Stats will be populated dynamically -->
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <!-- Auth Modal -->
+    <div id="auth-modal" class="modal hidden">
+        <div class="modal-content glass-strong">
+            <h2>Welcome to MASTERLINC</h2>
+            <p>Sign in to track your conversations and access personalized features</p>
+            <div id="auth-form">
+                <!-- Auth form will be populated by JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="./assets/js/config.js"></script>
+    <script src="./assets/js/auth.js"></script>
+    <script src="./assets/js/api.js"></script>
+    <script src="./assets/js/analytics.js"></script>
+    <script src="./assets/js/app.js"></script>
+</body>
+</html>

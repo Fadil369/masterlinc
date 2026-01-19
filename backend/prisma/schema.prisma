@@ -1,0 +1,150 @@
+// This is your Prisma schema file
+// Learn more: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String
+  password      String
+  avatar        String?
+  role          String    @default("user") // user, admin
+  isActive      Boolean   @default(true)
+  emailVerified Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  lastLoginAt   DateTime?
+
+  // Relations
+  sessions      Session[]
+  chatMessages  ChatMessage[]
+  analytics     AnalyticsEvent[]
+  preferences   UserPreferences?
+
+  @@index([email])
+  @@map("users")
+}
+
+model Session {
+  id           String    @id @default(cuid())
+  userId       String
+  sessionId    String    @unique
+  token        String    @unique
+  refreshToken String?   @unique
+  ipAddress    String?
+  userAgent    String?
+  isActive     Boolean   @default(true)
+  expiresAt    DateTime
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([sessionId])
+  @@index([token])
+  @@map("sessions")
+}
+
+model ChatMessage {
+  id               String   @id @default(cuid())
+  userId           String
+  sessionId        String
+  domain           String // healthcare, business, development, personal
+  role             String // user, assistant
+  content          String   @db.Text
+  metadata         Json?
+  tokens           Int?
+  responseTime     Int? // in milliseconds
+  createdAt        DateTime @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([sessionId])
+  @@index([domain])
+  @@index([createdAt])
+  @@map("chat_messages")
+}
+
+model AnalyticsEvent {
+  id        String   @id @default(cuid())
+  userId    String?
+  sessionId String
+  eventName String
+  eventData Json?
+  timestamp DateTime @default(now())
+  ipAddress String?
+  userAgent String?
+
+  // Relations
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([sessionId])
+  @@index([eventName])
+  @@index([timestamp])
+  @@map("analytics_events")
+}
+
+model UserPreferences {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  language        String   @default("en")
+  defaultDomain   String   @default("healthcare")
+  theme           String   @default("dark")
+  notifications   Boolean  @default(true)
+  autoSave        Boolean  @default(true)
+  preferences     Json?    // Additional custom preferences
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_preferences")
+}
+
+model UsageStats {
+  id                String   @id @default(cuid())
+  userId            String   @unique
+  totalMessages     Int      @default(0)
+  totalSessions     Int      @default(0)
+  totalTokens       Int      @default(0)
+  domainsUsed       Json? // Array of domains
+  averageResponseTime Int?
+  lastActivityAt    DateTime @default(now())
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([userId])
+  @@map("usage_stats")
+}
+
+model ApiKey {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  name        String
+  userId      String?
+  isActive    Boolean  @default(true)
+  permissions Json? // Array of allowed permissions
+  rateLimit   Int      @default(1000)
+  expiresAt   DateTime?
+  lastUsedAt  DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([key])
+  @@index([userId])
+  @@map("api_keys")
+}

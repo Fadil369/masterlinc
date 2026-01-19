@@ -10,7 +10,17 @@
         "lint": "eslint .",
         "optimize": "vite optimize",
         "preview": "vite preview",
-        "metrics:dev": "tsx server/metrics-server.ts"
+        "metrics:dev": "tsx server/metrics-server.ts",
+        "backend:install": "cd backend && npm install",
+        "backend:dev": "cd backend && npm run dev",
+        "backend:migrate": "cd backend && npx prisma migrate dev",
+        "backend:seed": "cd backend && npm run db:seed",
+        "backend:studio": "cd backend && npm run db:studio",
+        "frontend:dev": "cd public && python -m http.server 8000",
+        "setup": "npm install && npm run backend:install && npm run backend:migrate && npm run backend:seed",
+        "start:all": "concurrently \"npm run backend:dev\" \"npm run frontend:dev\"",
+        "gh-pages:build": "cp -r public/* .",
+        "gh-pages:deploy": "gh-pages -d public"
     },
     "dependencies": {
         "@github/spark": "^0.0.1",
