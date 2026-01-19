@@ -185,6 +185,23 @@ export const getChatHistory = async (req, res) => {
   try {
     const { limit = 50, offset = 0, domain } = req.query;
 
+    // Validate and sanitize query parameters
+    const parsedLimit = parseInt(limit);
+    const parsedOffset = parseInt(offset);
+
+    if (isNaN(parsedLimit) || parsedLimit < 1 || parsedLimit > 100) {
+      return res.status(400).json({ error: 'Limit must be between 1 and 100' });
+    }
+
+    if (isNaN(parsedOffset) || parsedOffset < 0) {
+      return res.status(400).json({ error: 'Offset must be a non-negative number' });
+    }
+
+    // Validate domain if provided
+    if (domain && !['healthcare', 'business', 'development', 'personal'].includes(domain)) {
+      return res.status(400).json({ error: 'Invalid domain specified' });
+    }
+
     const where = {
       userId: req.user.id,
     };
