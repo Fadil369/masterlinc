@@ -18,6 +18,19 @@
     },
     "ghcr.io/devcontainers/features/sshd:1": {
       "version": "latest"
+    },
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "22",
+      "nodeGypDependencies": true
+    },
+    "ghcr.io/devcontainers-contrib/features/postgres-asdf:1": {
+      "version": "15"
+    },
+    "ghcr.io/devcontainers-contrib/features/redis-asdf:1": {
+      "version": "7"
+    },
+    "ghcr.io/devcontainers/features/github-cli:1": {
+      "version": "latest"
     }
   },
   "customizations": {
@@ -32,7 +45,12 @@
         "ms-azuretools.vscode-docker",
         "eamodio.gitlens",
         "firsttris.vscode-jest-runner",
-        "orta.vscode-jest"
+        "orta.vscode-jest",
+        "cweijan.vscode-postgresql-client2",
+        "mtxr.sqltools",
+        "bradlc.vscode-tailwindcss",
+        "prisma.prisma",
+        "rangav.vscode-thunder-client"
       ],
       "settings": {
         "editor.formatOnSave": true,
