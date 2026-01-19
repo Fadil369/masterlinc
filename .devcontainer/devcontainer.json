@@ -50,7 +50,8 @@
         "mtxr.sqltools",
         "bradlc.vscode-tailwindcss",
         "prisma.prisma",
-        "rangav.vscode-thunder-client"
+        "rangav.vscode-thunder-client",
+        "ritwickdey.LiveServer"
       ],
       "settings": {
         "editor.formatOnSave": true,
@@ -61,14 +62,30 @@
         "typescript.tsdk": "node_modules/typescript/lib",
         "python.linting.enabled": true,
         "python.linting.pylintEnabled": true,
-        "python.formatting.provider": "black"
+        "python.formatting.provider": "black",
+        "liveServer.settings.root": "./public",
+        "liveServer.settings.port": 8000
       }
     },
     "codespaces": { 
       "onStopCommand": "bash shutdown.sh"
     }
   },
-  "forwardPorts": [3000, 4000, 4173, 5000, 8080, 9000, 13000],
+  "forwardPorts": [3000, 4000, 4173, 5000, 8000, 8080, 9000, 13000],
+  "portsAttributes": {
+    "8000": {
+      "label": "GitHub Pages Preview",
+      "onAutoForward": "notify"
+    },
+    "5000": {
+      "label": "Vite Preview",
+      "onAutoForward": "notify"
+    },
+    "3000": {
+      "label": "Dev Server",
+      "onAutoForward": "openBrowser"
+    }
+  },
   "onCreateCommand": "bash .devcontainer/onCreate.sh",
   "postStartCommand": "bash .devcontainer/postStartCommand.sh",
   "remoteUser": "node"
