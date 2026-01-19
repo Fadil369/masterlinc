@@ -67,7 +67,9 @@ app.get('/api/health', async (req, res) => {
     logger.error('Health check failed:', error);
     res.status(503).json({
       status: 'unhealthy',
-      error: error.message,
+      timestamp: new Date().toISOString(),
+      // Don't expose internal error details in production
+      ...(process.env.NODE_ENV !== 'production' && { error: error.message }),
     });
   }
 });
