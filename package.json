@@ -1,28 +1,36 @@
 {
-    "name": "masterlinc",
+    "name": "brainsait",
     "private": true,
-    "version": "0.0.0",
-    "type": "module",
+    "version": "1.0.0",
+    "description": "BrainSAIT Healthcare AI Platform Monorepo",
     "scripts": {
-        "dev": "vite",
-        "kill": "fuser -k 5000/tcp",
-        "build": "tsc -b --noCheck && vite build",
-        "lint": "eslint .",
-        "optimize": "vite optimize",
-        "preview": "vite preview",
-        "metrics:dev": "tsx server/metrics-server.ts",
-        "backend:install": "cd backend && npm install",
-        "backend:dev": "cd backend && npm run dev",
-        "backend:migrate": "cd backend && npx prisma migrate dev",
-        "backend:seed": "cd backend && npm run db:seed",
-        "backend:studio": "cd backend && npm run db:studio",
-        "frontend:dev": "cd public && python -m http.server 8000",
-        "setup": "npm install && npm run backend:install && npm run backend:migrate && npm run backend:seed",
-        "start:all": "concurrently \"npm run backend:dev\" \"npm run frontend:dev\"",
-        "gh-pages:build": "cp -r public/* .",
-        "gh-pages:deploy": "gh-pages -d public"
+        "dev": "turbo run dev",
+        "build": "turbo run build",
+        "test": "turbo run test",
+        "lint": "turbo run lint",
+        "clean": "turbo run clean && rm -rf node_modules",
+        "dev:web": "turbo run dev --filter=@brainsait/web",
+        "dev:backend": "turbo run dev --filter=@brainsait/backend",
+        "dev:services": "turbo run dev --filter=./services/*",
+        "db:migrate": "turbo run db:migrate --filter=@brainsait/backend",
+        "db:seed": "turbo run db:seed --filter=@brainsait/backend",
+        "db:studio": "turbo run db:studio --filter=@brainsait/backend",
+        "docker:up": "docker-compose -f infrastructure/docker/docker-compose.yml up -d",
+        "docker:down": "docker-compose -f infrastructure/docker/docker-compose.yml down"
     },
-    "dependencies": {
+    "workspaces": [
+        "apps/*",
+        "packages/*",
+        "services/*"
+    ],
+    "devDependencies": {
+        "turbo": "^2.0.0"
+    },
+    "packageManager": "pnpm@9.0.0",
+    "engines": {
+        "node": ">=20.0.0"
+    },
+    "oldDependencies": {
         "@heroicons/react": "^2.2.0",
         "@hookform/resolvers": "^4.1.3",
         "@octokit/core": "^6.1.4",
@@ -102,10 +110,5 @@
         "typescript": "~5.7.2",
         "typescript-eslint": "^8.38.0",
         "vite": "^7.2.6"
-    },
-    "workspaces": {
-        "packages": [
-            "packages/*"
-        ]
     }
 }

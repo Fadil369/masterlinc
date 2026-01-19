@@ -1,363 +1,297 @@
-# MASTERLINC - BrainSAIT Agentic Platform
+# BrainSAIT Healthcare AI Platform
 
-A complete full-stack platform for intelligent healthcare agent orchestration in the Saudi Arabian healthcare ecosystem. Features a sophisticated bilingual (English/Arabic) dashboard with production-ready Python backend services.
+[![Monorepo CI](https://github.com/Fadil369/masterlinc/actions/workflows/monorepo-ci.yml/badge.svg)](https://github.com/Fadil369/masterlinc/actions/workflows/monorepo-ci.yml)
 
-## 🏗️ Architecture
+A complete full-stack monorepo for intelligent healthcare agent orchestration in the Saudi Arabian healthcare ecosystem. Features a sophisticated bilingual (English/Arabic) dashboard with production-ready backend services.
 
-- **Frontend:** React 19 + TypeScript + Tailwind CSS
-- **Backend:** Python 3.11 + FastAPI + LangChain
-- **FHIR Server:** HAPI FHIR R4 with NPHIES profiles
-- **Database:** PostgreSQL 15
-- **Cache:** Redis 7
-- **Monitoring:** Prometheus + Grafana
-- **Standards:** FHIR R4, NPHIES 1.0.0, HIPAA-compliant
+## 🏗️ Monorepo Architecture
+
+This repository is structured as a monorepo using **pnpm workspaces** and **Turborepo** for efficient development and deployment.
+
+```
+brainsait/
+├── apps/                    # Deployable applications
+│   ├── web/                 # React frontend (Vite + TypeScript)
+│   └── backend/             # Express.js backend (Prisma + PostgreSQL)
+├── services/                # Microservices
+│   ├── audit-service/       # Audit logging
+│   ├── authlinc-api/        # Authentication
+│   ├── claimlinc-api/       # Claims processing
+│   ├── devlinc-api/         # Dev automation
+│   ├── doctorlinc-api/      # Clinical support
+│   ├── masterlinc-api/      # Central orchestrator
+│   └── policylinc-api/      # Policy interpretation
+├── packages/                # Shared libraries
+│   ├── config/              # Shared configurations (ESLint, TypeScript, Tailwind)
+│   ├── nphies-client/       # NPHIES integration
+│   ├── types/               # Shared TypeScript types
+│   └── ui-components/       # Shared React components
+├── agents/                  # AI agents (placeholder for future merge)
+├── infrastructure/          # IaC and deployment configs
+├── docs/                    # Documentation
+└── tests/                   # E2E and integration tests
+```
 
 ## 🚀 Quick Start
 
-### Docker Compose (Recommended)
+### Prerequisites
+- Node.js >= 20.0.0
+- pnpm >= 9.0.0
+- Docker & Docker Compose (optional)
+
+### Installation
 
 ```bash
-# Clone repository
+# Clone the repository
 git clone https://github.com/Fadil369/masterlinc.git
 cd masterlinc
 
-# Configure environment
+# Install dependencies for all workspaces
+pnpm install
+
+# Set up environment variables
 cp .env.example .env
-# Edit .env and set OPENAI_API_KEY and other values
+# Edit .env with your configuration
 
-# Start all services
-docker-compose -f docker-compose.agents.yml up -d
+# Run database migrations
+pnpm db:migrate
 
-# Verify services
-curl http://localhost:8000/health  # MasterLinc API
-curl http://localhost:8001/health  # ClaimLinc API
-curl http://localhost:8080/fhir/metadata  # FHIR Server
+# Seed the database
+pnpm db:seed
 ```
 
-### Frontend Dashboard
+### Development
 
 ```bash
-npm install
-npm run dev
-# Access at http://localhost:5173
+# Run all apps in development mode
+pnpm dev
+
+# Run specific apps
+pnpm dev:web       # Frontend only (port 5173)
+pnpm dev:backend   # Backend only (port 3001)
+
+# Run all services
+pnpm dev:services
+
+# Open Prisma Studio
+pnpm db:studio
 ```
 
-See [Deployment Guide](docs/deployment/DEPLOYMENT.md) for detailed instructions.
+### Building
 
-## 📦 Backend Services
+```bash
+# Build all apps and packages
+pnpm build
 
-### MasterLinc Orchestrator (Port 8000)
-Central orchestration brain with LangChain-powered task delegation:
-- Task analysis and intent classification
-- Agent delegation based on capabilities
-- Multi-agent workflow execution
-- Message routing between agents
-- Full audit logging and RBAC
+# Lint all code
+pnpm lint
 
-**API Docs:** http://localhost:8000/api/v1/docs
+# Run tests
+pnpm test
 
-### ClaimLinc Agent (Port 8001)
-Intelligent claims processing for Saudi healthcare:
-- 5-layer FHIR claim validation (Schema, NPHIES, Business Rules, Payer, Clinical)
-- AI-powered rejection root cause analysis
-- Resubmission recommendations
-- Batch pattern detection
-- Financial impact calculation
+# Clean all build artifacts
+pnpm clean
+```
 
-**API Docs:** http://localhost:8001/api/v1/docs
+### Docker
 
-### DoctorLinc Agent (Port 8002)
-Clinical decision support system:
-- Diagnosis assistance
-- Treatment recommendations
-- Drug interaction checking
-- Medical literature search
-- FHIR Patient/Condition handling
+```bash
+# Start all services with Docker Compose
+pnpm docker:up
 
-### PolicyLinc Agent (Port 8003)
-Payer policy interpretation with RAG:
-- Coverage verification
-- Pre-authorization requirements
-- Benefit limitations checking
-- Policy document Q&A
+# Stop all services
+pnpm docker:down
+```
 
-### DevLinc Agent (Port 8004)
-Development automation:
-- Code generation (FastAPI, React, FHIR)
-- Code review and suggestions
-- Test generation
-- Documentation generation
+## 📦 Applications
 
-### AuthLinc Agent (Port 8005)
-Authentication and authorization:
-- JWT token management
-- OAuth 2.0 / OpenID Connect
-- RBAC enforcement
-- Session management
+### Web App (@brainsait/web)
+**Location:** `apps/web/`  
+**Port:** 5173  
+**Tech Stack:** React 19, TypeScript, Vite, Tailwind CSS v4
 
-### Audit Service (Port 8006)
-HIPAA-compliant audit logging:
-- Immutable audit event storage
-- 7-year retention policy
-- Real-time alerting
-- FHIR AuditEvent generation
+The main frontend dashboard featuring:
+- 🌐 Bilingual interface (English/Arabic with RTL support)
+- 🤖 Agent management and monitoring
+- 📨 Real-time message communication
+- 📊 System health dashboard
+- 🔄 Workflow orchestration (coming soon)
 
-### FHIR Server (Port 8080)
-HAPI FHIR R4 with NPHIES profiles:
-- Saudi-specific StructureDefinitions
-- NPHIES 1.0.0 compliance
-- Terminology services (ICD-10, CPT, SNOMED CT)
-- Example resources included
+**Quick Start:**
+```bash
+cd apps/web
+pnpm dev
+```
 
-**FHIR Endpoint:** http://localhost:8080/fhir
+### Backend (@brainsait/backend)
+**Location:** `apps/backend/`  
+**Port:** 3001  
+**Tech Stack:** Express.js, Prisma, PostgreSQL, Redis
 
-## 🎨 Frontend Features
+Core backend API providing:
+- User management and authentication
+- Analytics and metrics
+- Database operations via Prisma ORM
+- RESTful API endpoints
 
-### 🌐 Bilingual Interface
-- **Full English/Arabic Support** - Complete interface translation
-- **RTL Layout** - Proper right-to-left layout for Arabic
-- **Arabic Fonts** - IBM Plex Sans Arabic for optimal readability
-- **Seamless Switching** - Toggle between languages instantly
+**Quick Start:**
+```bash
+cd apps/backend
+pnpm dev
+```
 
-### 🤖 Agent Management
-- **Agent Registry** - View all registered agents with real-time status
-- **Category Filtering** - Filter by healthcare, business, automation, content, security
-- **Search Functionality** - Search agents by name, ID, or description
-- **Status Monitoring** - Visual indicators for online/offline/degraded/maintenance
-- **Capability Display** - View agent capabilities and versions
-- **Priority Levels** - Agents sorted by priority and status
+**API Documentation:** Available at `/api/docs` when running
 
-### 📨 Message Communication
-- **Message Log** - View all messages between agents
-- **Send Messages** - Create and send messages between any agents
-- **Real-time Updates** - Messages appear instantly with animations
-- **Status Tracking** - Track delivery status (delivered/pending/failed)
-- **Content Preview** - View JSON message payloads
+## 🔧 Packages
 
-### 📊 System Dashboard
-- **System Health** - Monitor overall system status
-- **Agent Metrics** - Quick stats on registered agents
-- **Recent Activity** - View latest messages and agent updates
-- **Service Status** - Check database, Redis, message queue health
-- **Uptime Tracking** - System uptime display
+### Shared Configurations
+- **@brainsait/eslint-config** - Shared ESLint configuration
+- **@brainsait/typescript-config** - Shared TypeScript configurations (base, react, node)
 
-### 🔄 Workflow Management
-- **Workflow Creation** - (Ready for implementation)
-- **Multi-agent Orchestration** - Coordinate actions across agents
-- **Step-by-step Execution** - Define sequential agent operations
+### Libraries
+- **@brainsait/types** - Shared TypeScript type definitions
+- **@brainsait/ui-components** - Shared React UI components
+- **nphies-client** - NPHIES integration client
 
 ## 🛠️ Technology Stack
 
 ### Frontend
-- **React 19** - Latest React with hooks
-- **TypeScript** - Type-safe development
-- **Tailwind CSS v4** - Modern utility-first CSS
-- **Framer Motion** - Smooth animations
-- **shadcn/ui** - Beautiful, accessible components
-- **Phosphor Icons** - Comprehensive icon set
-- **Sonner** - Toast notifications
-- **Spark KV Storage** - Persistent state management
+- React 19 with TypeScript
+- Vite for fast development and building
+- Tailwind CSS v4 for styling
+- shadcn/ui components
+- Framer Motion for animations
+- TanStack Query for data fetching
 
 ### Backend
-- **Python 3.11+** - Modern async Python
-- **FastAPI 0.109+** - High-performance API framework
-- **LangChain 0.1+** - LLM orchestration
-- **Pydantic 2.0+** - Data validation
-- **SQLAlchemy 2.0** - Database ORM
-- **asyncpg** - Async PostgreSQL driver
-- **Redis** - Caching and queues
-- **structlog** - Structured logging
+- Express.js for API server
+- Prisma ORM with PostgreSQL
+- Redis for caching
+- JWT authentication
+- Winston for logging
 
-### FHIR & Healthcare
-- **HAPI FHIR R4** - FHIR server implementation
-- **fhir.resources 7.0+** - Python FHIR models
-- **NPHIES 1.0.0** - Saudi health insurance profiles
-- **ICD-10-CM, CPT, SNOMED CT** - Medical terminologies
+### DevOps
+- pnpm workspaces for monorepo management
+- Turborepo for build orchestration
+- Docker & Docker Compose
+- GitHub Actions for CI/CD
 
-### Infrastructure
-- **Docker & Docker Compose** - Containerization
-- **PostgreSQL 15** - Relational database
-- **Redis 7** - In-memory data store
-- **Prometheus** - Metrics collection
-- **Grafana** - Monitoring dashboards
+## 📖 Documentation
 
-## 📂 Project Structure
+- [Deployment Guide](docs/deployment/DEPLOYMENT_GUIDE.md)
+- [Security Policy](docs/security/SECURITY.md)
+- [Security Advisory](docs/security/SECURITY_ADVISORY.md)
+- [Product Requirements](docs/PRD.md)
 
-```
-masterlinc/
-├── apps/
-│   └── dashboard/          # React frontend (existing)
-├── services/               # Backend microservices
-│   ├── masterlinc-api/     # Central orchestrator
-│   ├── claimlinc-api/      # Claims processing
-│   ├── doctorlinc-api/     # Clinical support
-│   ├── policylinc-api/     # Policy interpretation
-│   ├── devlinc-api/        # Dev automation
-│   ├── authlinc-api/       # Authentication
-│   ├── audit-service/      # Audit logging
-│   └── fhir-server/        # HAPI FHIR configuration
-├── packages/               # Shared packages
-│   ├── nphies-client/      # NPHIES integration
-│   ├── arabic-nlp/         # Arabic NLP processing
-│   ├── shared-types/       # Shared type definitions
-│   └── fhir-utils/         # FHIR utilities
-├── infrastructure/         # Infrastructure configs
-│   ├── docker/             # Docker configurations
-│   ├── kubernetes/         # K8s manifests
-│   ├── api-gateway/        # Kong/Traefik configs
-│   ├── prometheus/         # Prometheus config
-│   └── grafana/            # Grafana dashboards
-├── config/                 # Application configs
-│   ├── agents.yaml         # Agent registry
-│   └── rbac.yaml           # RBAC policies
-├── docs/                   # Documentation
-│   ├── api/                # API documentation
-│   ├── deployment/         # Deployment guides
-│   └── prompts/            # LLM prompts
-├── docker-compose.agents.yml  # Multi-service deployment
-└── .env.example            # Environment template
-```
+## 🤝 Contributing
 
-## Design System
+We welcome contributions! Please see our contributing guidelines in the docs.
+
+## 📝 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🔐 Security
+
+For security concerns, please see [SECURITY.md](docs/security/SECURITY.md).
+
+---
+
+**Part of the BrainSAIT ecosystem** - Transforming healthcare through AI innovation
+
+**MASTERLINC** = **M**ulti-**A**gent **S**ystem for **T**ransformative **E**nterprise **R**esource **L**anguage-**I**ntegrated **N**etworked **C**oordination
+
+
+## 🎨 Design System
 
 ### Colors
 - **Primary (Teal)**: `oklch(0.55 0.15 200)` - Healthcare trust and precision
 - **Accent (Cyan)**: `oklch(0.70 0.18 210)` - CTAs and active states
 - **Success (Green)**: `oklch(0.65 0.18 150)` - Online status
 - **Warning (Yellow)**: `oklch(0.75 0.15 80)` - Degraded status
-- **Purple**: `oklch(0.50 0.18 290)` - Business/automation category
 
 ### Typography
 - **IBM Plex Sans** - Primary interface font
 - **IBM Plex Sans Arabic** - Arabic text
 - **JetBrains Mono** - Agent IDs, endpoints, code
 
-### Components
-All components built with shadcn/ui v4:
-- Cards, Badges, Buttons
-- Tabs, Dialogs, ScrollArea
-- Select, Input, Textarea
-- Tooltip, Switch
+## 📂 Workspace Structure
 
-## Data Persistence
+Each workspace follows consistent patterns:
 
-All data persists using Spark's KV storage:
-- `masterlinc-language` - User's language preference
-- `masterlinc-agents` - Agent registry
-- `masterlinc-messages` - Message log
-- `masterlinc-workflows` - Workflow definitions
+- **apps/*** - Full applications with their own package.json
+- **packages/*** - Shared libraries used across apps and services
+- **services/*** - Microservices for specific domains
 
-## Agent Categories
+All workspaces can depend on each other, and Turborepo handles the build order automatically.
 
-### Healthcare
-- **DoctorLINC** - Clinical decision support
-- **NurseLINC** - Nursing workflow automation
-- **PatientLINC** - Patient engagement
+## 🧪 Development Workflow
 
-### Business
-- **BizLINC** - Business intelligence & analytics
+### Adding a New Package
 
-### Security
-- **AuthLINC** - Authentication & security gateway
+```bash
+# Create package directory
+mkdir -p packages/my-package/src
 
-### Content
-- **ContentLINC** - Content generation & management
+# Create package.json
+cat > packages/my-package/package.json << EOF
+{
+  "name": "@brainsait/my-package",
+  "version": "0.0.0",
+  "private": true
+}
+EOF
 
-## Mock Data
+# Install in another package
+cd apps/web
+pnpm add @brainsait/my-package
+```
 
-The app includes realistic mock data for demonstration:
-- 6 sample agents (healthcare, business, content, security)
-- Pre-populated messages showing agent communication
-- System health metrics
-- Bilingual agent names and descriptions
+### Running Turbo Commands
 
-## Real-time Features
+```bash
+# Run a command in all workspaces
+turbo run build
 
-- **Auto-refresh** - Agent heartbeats update every 10 seconds
-- **Live Updates** - Messages appear with smooth animations
-- **Status Changes** - Agents can change status dynamically
-- **Uptime Counter** - System uptime increments automatically
+# Run in specific workspace
+turbo run dev --filter=@brainsait/web
 
-## Responsive Design
+# Run in multiple workspaces
+turbo run build --filter=./apps/*
+```
 
-- **Mobile-first** - Optimized for all screen sizes
-- **Breakpoints**:
-  - Mobile: Single column layout
-  - Tablet: 2-column grid
-  - Desktop: 3-column grid
-- **Touch-friendly** - Large tap targets for mobile
-- **Adaptive UI** - Drawers on mobile, modals on desktop
+## 📊 Scripts Reference
 
-## Accessibility
+| Script | Description |
+|--------|-------------|
+| `pnpm dev` | Run all apps in development mode |
+| `pnpm build` | Build all apps and packages |
+| `pnpm test` | Run tests across all workspaces |
+| `pnpm lint` | Lint all code |
+| `pnpm dev:web` | Run web app only |
+| `pnpm dev:backend` | Run backend only |
+| `pnpm dev:services` | Run all microservices |
+| `pnpm db:migrate` | Run database migrations |
+| `pnpm db:seed` | Seed the database |
+| `pnpm db:studio` | Open Prisma Studio |
+| `pnpm docker:up` | Start Docker services |
+| `pnpm docker:down` | Stop Docker services |
 
-- **WCAG AA Compliant** - All color contrasts meet standards
-- **Keyboard Navigation** - Full keyboard support
-- **Screen Reader Ready** - Semantic HTML
-- **Focus Indicators** - Clear focus states
-- **ARIA Labels** - Proper labeling
+## 🤝 Contributing
 
-## Arabic/RTL Support
+We welcome contributions! Please see our contributing guidelines in the docs.
 
-- **Complete RTL** - Entire layout flips for Arabic
-- **Proper Text Flow** - Arabic text reads right-to-left
-- **Icon Positioning** - Icons adjust for RTL
-- **Number Formatting** - Respects locale
-- **Date/Time** - Arabic locale formatting
+## 📝 License
 
-## Future Enhancements
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-1. **Real Backend Integration** - Connect to actual MASTERLINC API
-2. **WebSocket Support** - Real-time agent communication
-3. **Workflow Builder** - Visual workflow creation interface
-4. **Advanced Metrics** - Charts and analytics
-5. **Agent Configuration** - Edit agent settings
-6. **Message Filtering** - Filter by agent, type, status
-7. **Export/Import** - Backup and restore data
-8. **Dark Mode** - Theme switching
-9. **Multi-language** - Add French, Spanish support
-10. **Performance Dashboard** - Agent performance metrics
+## 🔐 Security
 
-## Usage
-
-### Viewing Agents
-1. Navigate to the "Agents" tab
-2. Use search to find specific agents
-3. Filter by category
-4. Click any agent card for details
-
-### Sending Messages
-1. Go to the "Messages" tab
-2. Click "Send Message"
-3. Select sender and receiver agents
-4. Enter message content (JSON format)
-5. Click "Send"
-
-### Monitoring System
-1. View the "Dashboard" tab
-2. Check system health status
-3. Monitor recent activity
-4. View agent metrics
-
-### Changing Language
-1. Click the EN/AR toggle in the header
-2. Interface immediately switches
-3. Preference is saved automatically
-
-## Development Notes
-
-- Built as a frontend demonstration of the MASTERLINC concept
-- Uses mock data but structured for easy API integration
-- All components are production-ready
-- Follows React best practices
-- Type-safe with TypeScript
-- Accessible and responsive
-
-## Credits
-
-Part of the BrainSAIT LINC ecosystem - a Saudi healthcare digital transformation initiative.
-
-**MASTERLINC** = **M**ulti-**A**gent **S**ystem for **T**ransformative **E**nterprise **R**esource **L**anguage-**I**ntegrated **N**etworked **C**oordination
+For security concerns, please see [SECURITY.md](docs/security/SECURITY.md).
 
 ---
 
-**Built with ❤️ for healthcare innovation**
+**Part of the BrainSAIT ecosystem** - Transforming healthcare through AI innovation
+
+**MASTERLINC** = **M**ulti-**A**gent **S**ystem for **T**ransformative **E**nterprise **R**esource **L**anguage-**I**ntegrated **N**etworked **C**oordination
+
