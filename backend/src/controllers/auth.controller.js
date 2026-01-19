@@ -203,7 +203,7 @@ export const refreshTokenHandler = async (req, res) => {
       include: { user: true },
     });
 
-    if (!session || !session.isActive) {
+    if (!session || !session.isActive || new Date() > session.expiresAt) {
       return res.status(401).json({ error: 'Invalid refresh token' });
     }
 
