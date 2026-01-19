@@ -1,6 +1,5 @@
 import prisma from '../config/database.js';
 import logger from '../config/logger.js';
-import fetch from 'node-fetch';
 
 const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages';
 
