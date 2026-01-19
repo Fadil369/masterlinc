@@ -21,7 +21,7 @@ const CONFIG = {
         // Anthropic API Configuration
         ANTHROPIC: {
             URL: 'https://api.anthropic.com/v1/messages',
-            MODEL: 'claude-sonnet-4-20250514',
+            MODEL: 'claude-3-5-sonnet-20241022',
             VERSION: '2023-06-01',
             MAX_TOKENS: 2048
         },
