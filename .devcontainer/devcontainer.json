@@ -16,22 +16,17 @@
     "ghcr.io/devcontainers/features/git:1": {
       "version": "latest"
     },
-    "ghcr.io/devcontainers/features/sshd:1": {
-      "version": "latest"
-    },
     "ghcr.io/devcontainers/features/node:1": {
       "version": "22",
       "nodeGypDependencies": true
     },
-    "ghcr.io/devcontainers-contrib/features/postgres-asdf:1": {
-      "version": "15"
-    },
-    "ghcr.io/devcontainers-contrib/features/redis-asdf:1": {
-      "version": "7"
-    },
     "ghcr.io/devcontainers/features/github-cli:1": {
       "version": "latest"
     }
+  },
+  "containerEnv": {
+    "DATABASE_URL": "postgresql://postgres:postgres@localhost:5432/masterlinc",
+    "REDIS_URL": "redis://localhost:6379"
   },
   "customizations": {
     "vscode": {
@@ -57,36 +52,39 @@
         "editor.formatOnSave": true,
         "editor.defaultFormatter": "esbenp.prettier-vscode",
         "editor.codeActionsOnSave": {
-          "source.fixAll.eslint": true
+          "source.fixAll.eslint": "explicit"
         },
         "typescript.tsdk": "node_modules/typescript/lib",
         "python.linting.enabled": true,
-        "python.linting.pylintEnabled": true,
         "python.formatting.provider": "black",
         "liveServer.settings.root": "./public",
         "liveServer.settings.port": 8000
       }
-    },
-    "codespaces": { 
-      "onStopCommand": "bash shutdown.sh"
     }
   },
-  "forwardPorts": [3000, 4000, 4173, 5000, 8000, 8080, 9000, 13000],
+  "forwardPorts": [3000, 4000, 4173, 5000, 5173, 5432, 6379, 8000, 8080, 9000, 13000],
   "portsAttributes": {
-    "8000": {
-      "label": "GitHub Pages Preview",
-      "onAutoForward": "notify"
-    },
-    "5000": {
-      "label": "Vite Preview",
-      "onAutoForward": "notify"
+    "5173": {
+      "label": "Vite Dev Server",
+      "onAutoForward": "openBrowser"
     },
     "3000": {
-      "label": "Dev Server",
-      "onAutoForward": "openBrowser"
+      "label": "Backend API",
+      "onAutoForward": "notify"
+    },
+    "5432": {
+      "label": "PostgreSQL",
+      "onAutoForward": "silent"
+    },
+    "6379": {
+      "label": "Redis",
+      "onAutoForward": "silent"
+    },
+    "8000": {
+      "label": "Python Services",
+      "onAutoForward": "notify"
     }
   },
-  "onCreateCommand": "bash .devcontainer/onCreate.sh",
-  "postStartCommand": "bash .devcontainer/postStartCommand.sh",
+  "postCreateCommand": "npm install",
   "remoteUser": "node"
 }
