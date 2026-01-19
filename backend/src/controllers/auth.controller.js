@@ -75,7 +75,7 @@ export const register = async (req, res) => {
     const token = generateToken({ userId: user.id, sessionId });
     const refreshToken = generateRefreshToken({ userId: user.id, sessionId });
 
-    const session = await prisma.session.create({
+    await prisma.session.create({
       data: {
         userId: user.id,
         sessionId,
