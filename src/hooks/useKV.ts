@@ -16,7 +16,11 @@ export function useKV<T>(
   const [value, setValue] = useState<T>(() => {
     try {
       const item = window.localStorage.getItem(key);
-      return item ? (JSON.parse(item) as T) : defaultValue;
+      if (!item) return defaultValue;
+      
+      // Parse JSON safely
+      const parsed = JSON.parse(item) as T;
+      return parsed;
     } catch (error) {
       console.error(`Error reading localStorage key "${key}":`, error);
       return defaultValue;
@@ -28,7 +32,11 @@ export function useKV<T>(
     try {
       window.localStorage.setItem(key, JSON.stringify(value));
     } catch (error) {
-      console.error(`Error writing to localStorage key "${key}":`, error);
+      if (error instanceof Error && error.name === 'QuotaExceededError') {
+        console.error(`localStorage quota exceeded for key "${key}". Consider clearing old data.`);
+      } else {
+        console.error(`Error writing to localStorage key "${key}":`, error);
+      }
     }
   }, [key, value]);
 

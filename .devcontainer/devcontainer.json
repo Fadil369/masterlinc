@@ -63,7 +63,7 @@
         "python.linting.enabled": true,
         "python.linting.pylintEnabled": true,
         "python.formatting.provider": "black",
-        "liveServer.settings.root": "/public",
+        "liveServer.settings.root": "./public",
         "liveServer.settings.port": 8000
       }
     },

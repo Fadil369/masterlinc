@@ -27,7 +27,8 @@ if [ -d "services" ]; then
     for service_dir in services/*/; do
         if [ -f "${service_dir}requirements.txt" ]; then
             echo "Installing dependencies for ${service_dir}..."
-            pip install -r "${service_dir}requirements.txt"
+            # Use --user flag to install in user space instead of global
+            pip install --user -r "${service_dir}requirements.txt"
         fi
     done
 fi
