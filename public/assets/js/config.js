@@ -3,9 +3,20 @@ const CONFIG = {
     // API Configuration
     API: {
         // Backend API URL - Update this based on your deployment
-        BASE_URL: window.location.hostname === 'localhost'
-            ? 'http://localhost:3000/api'
-            : 'https://your-backend-api.com/api',
+        BASE_URL: (() => {
+            if (window.location.hostname === 'localhost') {
+                return '';
+            }
+            
+            // Use environment-specific URL or throw error if not configured
+            const backendUrl = window.MASTERLINC_API_URL || process.env.REACT_APP_API_URL;
+            if (!backendUrl) {
+                console.error('Backend API URL not configured. Please set MASTERLINC_API_URL or REACT_APP_API_URL');
+                return null;
+            }
+            
+            return backendUrl;
+        })(),
 
         // Anthropic API Configuration
         ANTHROPIC: {
