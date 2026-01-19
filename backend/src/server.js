@@ -19,11 +19,14 @@ const PORT = process.env.PORT || 3000;
 // Middleware
 app.use(helmet());
 app.use(cors({
-  origin: process.env.CORS_ORIGIN?.split(',') || '*',
+  origin: process.env.CORS_ORIGIN?.split(',').map(origin => origin.trim()) || false,
   credentials: true,
+  optionsSuccessStatus: 200, // For legacy browser support
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
 }));
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(express.json({ limit: '1mb' })); // Reduced from 10mb
+app.use(express.urlencoded({ extended: true, limit: '1mb' })); // Reduced from 10mb
 
 // Logging
 if (process.env.NODE_ENV !== 'test') {
