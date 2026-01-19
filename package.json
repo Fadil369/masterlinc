@@ -1,53 +1,53 @@
 {
-    "name": "brainsait",
-    "private": true,
-    "version": "1.0.0",
-    "description": "BrainSAIT Healthcare AI Platform Monorepo",
-    "scripts": {
-        "dev": "turbo run dev",
-        "build": "turbo run build",
-        "test": "turbo run test",
-        "lint": "turbo run lint",
-        "clean": "turbo run clean && rm -rf node_modules",
-        "dev:web": "turbo run dev --filter=@brainsait/web",
-        "dev:backend": "turbo run dev --filter=@brainsait/backend",
-        "dev:services": "turbo run dev --filter=./services/*",
-        "db:migrate": "turbo run db:migrate --filter=@brainsait/backend",
-        "db:seed": "turbo run db:seed --filter=@brainsait/backend",
-        "db:studio": "turbo run db:studio --filter=@brainsait/backend",
-        "docker:up": "docker-compose -f infrastructure/docker/docker-compose.yml up -d",
-        "docker:down": "docker-compose -f infrastructure/docker/docker-compose.yml down"
-    },
-    "workspaces": [
-        "apps/*",
-        "packages/*",
-        "services/*"
-    ],
-    "devDependencies": {
-        "@eslint/js": "^9.21.0",
-        "@tailwindcss/postcss": "^4.1.8",
-        "@types/d3": "^7.4.3",
-        "@types/express": "^4.17.21",
-        "@types/jest": "^29.5.12",
-        "@types/node": "^20.11.0",
-        "@types/react": "^19.0.10",
-        "@types/react-dom": "^19.0.4",
-        "@types/three": "^0.175.0",
-        "@types/uuid": "^9.0.8",
-        "@vitejs/plugin-react-swc": "^4.2.2",
-        "eslint": "^9.28.0",
-        "eslint-plugin-react-hooks": "^5.2.0",
-        "eslint-plugin-react-refresh": "^0.4.19",
-        "globals": "^16.0.0",
-        "tailwindcss": "^4.1.11",
-        "turbo": "^2.0.0",
-        "tsx": "^4.19.2",
-        "typescript": "~5.7.2",
-        "typescript-eslint": "^8.38.0",
-        "vite": "^7.2.6"
-    },
-    "packageManager": "pnpm@9.0.0",
-    "engines": {
-        "node": ">=20.0.0"
-    }
+  "name": "brainsait",
+  "private": true,
+  "version": "1.0.0",
+  "description": "BrainSAIT Healthcare AI Platform Monorepo",
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "test": "turbo run test",
+    "lint": "turbo run lint",
+    "clean": "turbo run clean && rm -rf node_modules",
+    "dev:web": "turbo run dev --filter=@brainsait/web",
+    "dev:backend": "turbo run dev --filter=@brainsait/backend",
+    "dev:services": "turbo run dev --filter=./services/*",
+    "db:migrate": "turbo run db:migrate --filter=@brainsait/backend",
+    "db:seed": "turbo run db:seed --filter=@brainsait/backend",
+    "db:studio": "turbo run db:studio --filter=@brainsait/backend",
+    "docker:up": "docker-compose -f infrastructure/docker/docker-compose.yml up -d",
+    "docker:down": "docker-compose -f infrastructure/docker/docker-compose.yml down"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "services/*"
+  ],
+  "devDependencies": {
+    "@eslint/js": "^9.21.0",
+    "@tailwindcss/postcss": "^4.1.8",
+    "@types/d3": "^7.4.3",
+    "@types/express": "^4.17.21",
+    "@types/jest": "^29.5.12",
+    "@types/node": "^20.11.0",
+    "@types/react": "^19.0.10",
+    "@types/react-dom": "^19.0.4",
+    "@types/three": "^0.175.0",
+    "@types/uuid": "^9.0.8",
+    "@vitejs/plugin-react-swc": "^4.2.2",
+    "eslint": "^9.28.0",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "eslint-plugin-react-refresh": "^0.4.19",
+    "globals": "^16.0.0",
+    "tailwindcss": "^4.1.11",
+    "turbo": "^2.0.0",
+    "tsx": "^4.19.2",
+    "typescript": "~5.7.2",
+    "typescript-eslint": "^8.38.0",
+    "vite": "^7.2.6"
+  },
+  "packageManager": "pnpm@9.0.0",
+  "engines": {
+    "node": ">=20.0.0"
+  }
 }
