@@ -14,6 +14,29 @@ export const sendMessage = async (req, res) => {
       return res.status(400).json({ error: 'Message and domain are required' });
     }
 
+    // Validate message content
+    if (typeof message !== 'string' || message.trim().length === 0) {
+      return res.status(400).json({ error: 'Message must be a non-empty string' });
+    }
+
+    if (message.length > 10000) {
+      return res.status(400).json({ error: 'Message too long. Maximum 10,000 characters allowed' });
+    }
+
+    // Validate domain
+    const allowedDomains = ['healthcare', 'business', 'development', 'personal'];
+    if (!allowedDomains.includes(domain)) {
+      return res.status(400).json({ error: 'Invalid domain specified' });
+    }
+
+    // Validate language if provided
+    if (language && !['en', 'ar'].includes(language)) {
+      return res.status(400).json({ error: 'Invalid language. Only "en" and "ar" are supported' });
+    }
+
+    // Sanitize message content (remove potential harmful content)
+    const sanitizedMessage = message.trim().replace(/[\x00-\x1F\x7F]/g, '');
+
     // Save user message
     if (req.user) {
       await prisma.chatMessage.create({
