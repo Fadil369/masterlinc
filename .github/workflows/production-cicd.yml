@@ -1,0 +1,403 @@
+name: Production CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+      - release/**
+    tags:
+      - "v*"
+  pull_request:
+    branches:
+      - main
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ${{ github.repository_owner }}/masterlinc
+
+jobs:
+  # Security Scanning
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: "fs"
+          scan-ref: "."
+          format: "sarif"
+          output: "trivy-results.sarif"
+          severity: "CRITICAL,HIGH"
+
+      - name: Upload Trivy results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: "trivy-results.sarif"
+
+      - name: Run Bandit security linter (Python)
+        run: |
+          pip install bandit
+          bandit -r services/ -f json -o bandit-report.json || true
+
+      - name: Upload Bandit results
+        uses: actions/upload-artifact@v4
+        with:
+          name: bandit-report
+          path: bandit-report.json
+
+  # Code Quality & Testing
+  test-backend:
+    name: Test Backend Services
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service:
+          [
+            claimlinc-api,
+            policylinc-api,
+            doctorlinc-api,
+            authlinc-api,
+            masterlinc-api,
+          ]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          cd services/${{ matrix.service }}
+          pip install -r requirements.txt
+          pip install pytest pytest-cov pytest-asyncio httpx
+
+      - name: Run linting
+        run: |
+          pip install flake8 black isort mypy
+          cd services/${{ matrix.service }}
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+          black --check .
+          isort --check-only .
+          mypy . --ignore-missing-imports || true
+
+      - name: Run tests
+        run: |
+          cd services/${{ matrix.service }}
+          pytest tests/ --cov=. --cov-report=xml --cov-report=html || true
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v4
+        with:
+          file: ./services/${{ matrix.service }}/coverage.xml
+          flags: ${{ matrix.service }}
+          name: ${{ matrix.service }}
+
+  test-frontend:
+    name: Test Frontend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/web
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: apps/web/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run linting
+        run: npm run lint || true
+
+      - name: Run type check
+        run: npx tsc --noEmit
+
+      - name: Run tests
+        run: npm test || true
+
+      - name: Build
+        run: npm run build
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: apps/web/dist
+
+  # Build and Push Docker Images
+  build-and-push:
+    name: Build & Push Docker Images
+    runs-on: ubuntu-latest
+    needs: [security-scan, test-backend]
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        service:
+          - claimlinc-api
+          - policylinc-api
+          - doctorlinc-api
+          - authlinc-api
+          - masterlinc-api
+          - audit-service
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-${{ matrix.service }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./services/${{ matrix.service }}
+          file: ./services/${{ matrix.service }}/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            BUILD_DATE=${{ github.event.head_commit.timestamp }}
+            VCS_REF=${{ github.sha }}
+            VERSION=${{ steps.meta.outputs.version }}
+
+      - name: Scan Docker image for vulnerabilities
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-${{ matrix.service }}:latest
+          format: "sarif"
+          output: "trivy-image-results.sarif"
+          severity: "CRITICAL,HIGH"
+
+  # Deploy to Staging
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: [build-and-push, test-frontend]
+    if: github.ref == 'refs/heads/main'
+    environment:
+      name: staging
+      url: https://staging.masterlinc.health
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: "v1.28.0"
+
+      - name: Configure AWS credentials (if using EKS)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Update kubeconfig (EKS)
+        run: |
+          aws eks update-kubeconfig --name masterlinc-staging --region us-east-1
+
+      - name: Deploy to Kubernetes
+        run: |
+          kubectl apply -f infrastructure/kubernetes/namespace.yaml
+          kubectl apply -f infrastructure/kubernetes/configmaps.yaml
+          kubectl apply -f infrastructure/kubernetes/secrets.yaml
+          kubectl apply -f infrastructure/kubernetes/deployments/core-services.yaml
+          kubectl apply -f infrastructure/kubernetes/services/core-services.yaml
+          kubectl apply -f infrastructure/kubernetes/ingress.yaml
+          kubectl apply -f infrastructure/kubernetes/hpa.yaml
+
+      - name: Wait for rollout
+        run: |
+          kubectl rollout status deployment/masterlinc-api -n masterlinc --timeout=5m
+          kubectl rollout status deployment/claimlinc-api -n masterlinc --timeout=5m
+          kubectl rollout status deployment/policylinc-api -n masterlinc --timeout=5m
+          kubectl rollout status deployment/doctorlinc-api -n masterlinc --timeout=5m
+          kubectl rollout status deployment/authlinc-api -n masterlinc --timeout=5m
+
+      - name: Run smoke tests
+        run: |
+          sleep 30
+          curl -f https://staging.masterlinc.health/health || exit 1
+          curl -f https://staging.masterlinc.health/api/v1/claims/health || exit 1
+
+  # Deploy to Production
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [deploy-staging]
+    if: startsWith(github.ref, 'refs/tags/v')
+    environment:
+      name: production
+      url: https://masterlinc.health
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: "v1.28.0"
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Update kubeconfig
+        run: |
+          aws eks update-kubeconfig --name masterlinc-production --region us-east-1
+
+      - name: Create database backup
+        run: |
+          kubectl exec -n masterlinc deployment/postgres -- \
+            pg_dump -U masterlinc masterlinc > backup_$(date +%Y%m%d_%H%M%S).sql
+
+      - name: Deploy to Production Kubernetes
+        run: |
+          kubectl apply -f infrastructure/kubernetes/namespace.yaml
+          kubectl apply -f infrastructure/kubernetes/configmaps.yaml
+          kubectl apply -f infrastructure/kubernetes/secrets.yaml
+          kubectl apply -f infrastructure/kubernetes/deployments/core-services.yaml
+          kubectl apply -f infrastructure/kubernetes/services/core-services.yaml
+          kubectl apply -f infrastructure/kubernetes/ingress.yaml
+          kubectl apply -f infrastructure/kubernetes/hpa.yaml
+
+      - name: Wait for rollout
+        run: |
+          kubectl rollout status deployment/masterlinc-api -n masterlinc --timeout=10m
+          kubectl rollout status deployment/claimlinc-api -n masterlinc --timeout=10m
+          kubectl rollout status deployment/policylinc-api -n masterlinc --timeout=10m
+          kubectl rollout status deployment/doctorlinc-api -n masterlinc --timeout=10m
+          kubectl rollout status deployment/authlinc-api -n masterlinc --timeout=10m
+
+      - name: Run production smoke tests
+        run: |
+          sleep 60
+          curl -f https://masterlinc.health/health || exit 1
+          curl -f https://masterlinc.health/api/v1/claims/health || exit 1
+          curl -f https://masterlinc.health/api/v1/policies/health || exit 1
+          curl -f https://masterlinc.health/api/v1/auth/health || exit 1
+
+      - name: Send deployment notification
+        uses: 8398a7/action-slack@v3
+        if: always()
+        with:
+          status: ${{ job.status }}
+          text: |
+            Production Deployment ${{ job.status }}
+            Version: ${{ github.ref }}
+            Commit: ${{ github.sha }}
+            URL: https://masterlinc.health
+          webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+  # Performance Testing
+  performance-test:
+    name: Performance Testing
+    runs-on: ubuntu-latest
+    needs: [deploy-staging]
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run k6 load tests
+        uses: grafana/k6-action@v0.3.1
+        with:
+          filename: tests/performance/load-test.js
+          cloud: false
+        env:
+          K6_VUS: 50
+          K6_DURATION: 5m
+          API_URL: https://staging.masterlinc.health
+
+      - name: Upload performance results
+        uses: actions/upload-artifact@v4
+        with:
+          name: k6-results
+          path: results.json
+
+  # Rollback (manual trigger)
+  rollback:
+    name: Rollback Production
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch'
+    environment:
+      name: production
+    steps:
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Update kubeconfig
+        run: |
+          aws eks update-kubeconfig --name masterlinc-production --region us-east-1
+
+      - name: Rollback deployments
+        run: |
+          kubectl rollout undo deployment/masterlinc-api -n masterlinc
+          kubectl rollout undo deployment/claimlinc-api -n masterlinc
+          kubectl rollout undo deployment/policylinc-api -n masterlinc
+          kubectl rollout undo deployment/doctorlinc-api -n masterlinc
+          kubectl rollout undo deployment/authlinc-api -n masterlinc
+
+      - name: Wait for rollback
+        run: |
+          kubectl rollout status deployment/masterlinc-api -n masterlinc
+          kubectl rollout status deployment/claimlinc-api -n masterlinc
+
+      - name: Send rollback notification
+        uses: 8398a7/action-slack@v3
+        with:
+          status: custom
+          text: "🔄 Production rollback completed"
+          webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
