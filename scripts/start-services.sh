@@ -5,6 +5,19 @@
 
 set -e
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+LOG_DIR="$ROOT_DIR/logs"
+
+# Prefer the repo virtualenv if present
+if [ -x "$ROOT_DIR/.venv/bin/python" ]; then
+    PYTHON="$ROOT_DIR/.venv/bin/python"
+    PIP="$ROOT_DIR/.venv/bin/pip"
+else
+    PYTHON="python3"
+    PIP="pip"
+fi
+
 echo "========================================="
 echo "🚀 Starting MASTERLINC Services"
 echo "========================================="
@@ -17,18 +30,30 @@ RED='\033[0;31m'
 NC='\033[0m' # No Color
 
 # Check if Python is available
-if ! command -v python3 &> /dev/null; then
+if ! command -v "$PYTHON" &> /dev/null; then
     echo -e "${RED}❌ Python 3 is not installed${NC}"
     exit 1
 fi
 
 echo -e "${YELLOW}📦 Installing dependencies...${NC}"
 
+# NOTE: SBS services in this workspace already use ports 8000-8003.
+# To avoid collisions, this script runs MASTERLINC agent services on 9000-9006 by default.
+# Override with: MASTERLINC_BASE_PORT=8000 (or any free base), INSTALL_DEPS=1.
+
+MASTERLINC_BASE_PORT=${MASTERLINC_BASE_PORT:-9000}
+INSTALL_DEPS=${INSTALL_DEPS:-0}
+
+# Comma-separated list of services to start (defaults to all).
+# Example (fast workflow run):
+#   SERVICES=claimlinc-api,policylinc-api MASTERLINC_BASE_PORT=9000 ./scripts/start-services.sh
+SERVICES=${SERVICES:-"masterlinc-api,claimlinc-api,doctorlinc-api,policylinc-api,audit-service,authlinc-api"}
+
 # Function to start a service
 start_service() {
     SERVICE_NAME=$1
     SERVICE_PORT=$2
-    SERVICE_DIR="services/${SERVICE_NAME}"
+    SERVICE_DIR="$ROOT_DIR/services/${SERVICE_NAME}"
     
     if [ ! -d "$SERVICE_DIR" ]; then
         echo -e "${RED}❌ Service directory not found: $SERVICE_DIR${NC}"
@@ -37,48 +62,65 @@ start_service() {
     
     echo -e "${GREEN}▶️  Starting $SERVICE_NAME on port $SERVICE_PORT...${NC}"
     
-    cd "$SERVICE_DIR"
+    pushd "$SERVICE_DIR" >/dev/null
     
     # Install requirements if needed
     if [ -f "requirements.txt" ]; then
-        pip install -q -r requirements.txt 2>/dev/null || true
+        if [ "$INSTALL_DEPS" = "1" ]; then
+            set +e
+            "$PIP" install -q -r requirements.txt
+            PIP_STATUS=$?
+            set -e
+            if [ "$PIP_STATUS" -ne 0 ]; then
+                echo -e "${YELLOW}⚠${NC} Dependency install failed for $SERVICE_NAME (pip resolver conflict)."
+                echo -e "${YELLOW}⚠${NC} Continuing startup; set INSTALL_DEPS=0 to skip installs."
+            fi
+        fi
     fi
     
     # Start service in background
-    python3 main.py > "../../logs/${SERVICE_NAME}.log" 2>&1 &
+    PORT="$SERVICE_PORT" "$PYTHON" -m uvicorn main:app --host 0.0.0.0 --port "$SERVICE_PORT" > "${LOG_DIR}/${SERVICE_NAME}.log" 2>&1 &
     SERVICE_PID=$!
     
-    echo "$SERVICE_PID" > "../../logs/${SERVICE_NAME}.pid"
+    echo "$SERVICE_PID" > "${LOG_DIR}/${SERVICE_NAME}.pid"
     echo -e "${GREEN}✅ $SERVICE_NAME started (PID: $SERVICE_PID)${NC}"
     
-    cd ../..
+    popd >/dev/null
 }
 
 # Create logs directory
-mkdir -p logs
+mkdir -p "$LOG_DIR"
+
+# Stop any previously running MASTERLINC services (best-effort)
+"$SCRIPT_DIR/stop-services.sh" >/dev/null 2>&1 || true
 
 # Start services
 echo ""
 echo -e "${YELLOW}🔧 Starting backend services...${NC}"
 echo ""
 
-start_service "authlinc-api" 8005
-sleep 2
+get_port_for_service() {
+    case "$1" in
+        masterlinc-api) echo $((MASTERLINC_BASE_PORT + 0)) ;;
+        claimlinc-api)  echo $((MASTERLINC_BASE_PORT + 1)) ;;
+        doctorlinc-api) echo $((MASTERLINC_BASE_PORT + 2)) ;;
+        policylinc-api) echo $((MASTERLINC_BASE_PORT + 3)) ;;
+        audit-service)  echo $((MASTERLINC_BASE_PORT + 4)) ;;
+        authlinc-api)   echo $((MASTERLINC_BASE_PORT + 5)) ;;
+        *) echo "" ;;
+    esac
+}
 
-start_service "masterlinc-api" 8000
-sleep 2
-
-start_service "claimlinc-api" 8001
-sleep 2
-
-start_service "policylinc-api" 8003
-sleep 2
-
-start_service "doctorlinc-api" 8002
-sleep 2
-
-start_service "audit-service" 8004
-sleep 2
+IFS=',' read -r -a SERVICES_TO_START <<< "$SERVICES"
+for SERVICE in "${SERVICES_TO_START[@]}"; do
+    SERVICE_PORT=$(get_port_for_service "$SERVICE")
+    if [ -z "$SERVICE_PORT" ]; then
+        echo -e "${YELLOW}⚠${NC} Unknown service '${SERVICE}', skipping"
+        continue
+    fi
+    start_service "$SERVICE" "$SERVICE_PORT"
+    sleep 2
+done
 
 echo ""
 echo -e "${GREEN}=========================================${NC}"
@@ -87,20 +129,20 @@ echo -e "${GREEN}=========================================${NC}"
 echo ""
 echo "Service Status:"
 echo "---------------"
-echo "AuthLinc API:       http://localhost:8005"
-echo "MasterLinc API:     http://localhost:8000"
-echo "ClaimLinc API:      http://localhost:8001"
-echo "PolicyLinc API:     http://localhost:8003"
-echo "DoctorLinc API:     http://localhost:8002"
-echo "Audit Service:      http://localhost:8004"
+echo "MasterLinc API:     http://localhost:$((MASTERLINC_BASE_PORT + 0))"
+echo "ClaimLinc API:      http://localhost:$((MASTERLINC_BASE_PORT + 1))"
+echo "DoctorLinc API:     http://localhost:$((MASTERLINC_BASE_PORT + 2))"
+echo "PolicyLinc API:     http://localhost:$((MASTERLINC_BASE_PORT + 3))"
+echo "Audit Service:      http://localhost:$((MASTERLINC_BASE_PORT + 4))"
+echo "AuthLinc API:       http://localhost:$((MASTERLINC_BASE_PORT + 5))"
 echo ""
 echo "API Documentation:"
 echo "------------------"
-echo "ClaimLinc Docs:     http://localhost:8001/api/v1/docs"
-echo "PolicyLinc Docs:    http://localhost:8003/api/v1/docs"
-echo "DoctorLinc Docs:    http://localhost:8002/api/v1/docs"
-echo "AuthLinc Docs:      http://localhost:8005/api/v1/docs"
-echo "MasterLinc Docs:    http://localhost:8000/api/v1/docs"
+echo "ClaimLinc Docs:     http://localhost:$((MASTERLINC_BASE_PORT + 1))/api/v1/docs"
+echo "PolicyLinc Docs:    http://localhost:$((MASTERLINC_BASE_PORT + 3))/api/v1/docs"
+echo "DoctorLinc Docs:    http://localhost:$((MASTERLINC_BASE_PORT + 2))/api/v1/docs"
+echo "AuthLinc Docs:      http://localhost:$((MASTERLINC_BASE_PORT + 5))/api/v1/docs"
+echo "MasterLinc Docs:    http://localhost:$((MASTERLINC_BASE_PORT + 0))/api/v1/docs"
 echo ""
 echo "Logs directory:     ./logs/"
 echo ""
@@ -112,7 +154,7 @@ echo ""
 echo "Checking service health..."
 sleep 5
 
-for PORT in 8000 8001 8002 8003 8004 8005; do
+for PORT in $((MASTERLINC_BASE_PORT + 0)) $((MASTERLINC_BASE_PORT + 1)) $((MASTERLINC_BASE_PORT + 2)) $((MASTERLINC_BASE_PORT + 3)) $((MASTERLINC_BASE_PORT + 4)) $((MASTERLINC_BASE_PORT + 5)); do
     if curl -s http://localhost:$PORT/health > /dev/null 2>&1; then
         echo -e "${GREEN}✓${NC} Port $PORT responding"
     else

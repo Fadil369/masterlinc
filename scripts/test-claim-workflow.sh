@@ -19,12 +19,27 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
+# Keep this script fast even when some services are down
+CURL_CONNECT_TIMEOUT=${CURL_CONNECT_TIMEOUT:-1}
+CURL_MAX_TIME=${CURL_MAX_TIME:-3}
+
 # Test claim data
 CLAIM_ID="CLM_$(date +%s)"
 PATIENT_ID="PAT_12345"
 PROVIDER_ID="PRV_67890"
 SERVICE_CODE="99213"
 AMOUNT="150.00"
+
+# Agents run on 900x by default to avoid SBS ports 8000-8003.
+AGENT_BASE_PORT=${MASTERLINC_BASE_PORT:-9000}
+CLAIMLINC_BASE="http://localhost:$((AGENT_BASE_PORT + 1))"
+POLICYLINC_BASE="http://localhost:$((AGENT_BASE_PORT + 3))"
+
+# SBS uses facility_id in most endpoints
+FACILITY_ID=${FACILITY_ID:-1}
+
+# SBS financial rules engine expects item coding.system to match this value.
+SBS_CODING_SYSTEM=${SBS_CODING_SYSTEM:-http://sbs.sa/coding/services}
 
 echo "================================================================================"
 echo "📋 TEST CLAIM DETAILS"
@@ -40,7 +55,7 @@ echo ""
 check_service() {
     local name=$1
     local url=$2
-    local response=$(curl -s -o /dev/null -w "%{http_code}" "$url" 2>/dev/null || echo "000")
+  local response=$(curl -s --connect-timeout "$CURL_CONNECT_TIMEOUT" --max-time "$CURL_MAX_TIME" -o /dev/null -w "%{http_code}" "$url" 2>/dev/null || echo "000")
     
     if [ "$response" = "200" ]; then
         echo -e "${GREEN}✓${NC} $name: Healthy (HTTP $response)"
@@ -70,7 +85,7 @@ api_call() {
         echo "  Payload: $data"
     fi
     
-    local response=$(curl -s -X "$method" \
+    local response=$(curl -s --connect-timeout "$CURL_CONNECT_TIMEOUT" --max-time "$CURL_MAX_TIME" -X "$method" \
         -H "Content-Type: application/json" \
         -d "$data" \
         -w "\n%{http_code}" \
@@ -78,6 +93,10 @@ api_call() {
     
     local http_code=$(echo "$response" | tail -n 1)
     local body=$(echo "$response" | head -n -1)
+
+    # Export for callers that want to parse responses.
+    API_CALL_HTTP_CODE="$http_code"
+    API_CALL_BODY="$body"
     
     echo "  Response Code: $http_code"
     echo "  Response Body: ${body:0:200}..."
@@ -98,7 +117,9 @@ echo ""
 
 # Check all services
 check_service "Frontend" "http://localhost:5173" || true
-check_service "Backend API" "http://localhost:3000/health" || true
+check_service "MasterLinc API" "http://localhost:$((AGENT_BASE_PORT + 0))/health" || true
+check_service "ClaimLinc API" "${CLAIMLINC_BASE}/health" || true
+check_service "PolicyLinc API" "${POLICYLINC_BASE}/health" || true
 check_service "SBS Normalizer" "http://localhost:8000/health" || true
 check_service "SBS Signer" "http://localhost:8001/health" || true
 check_service "SBS Financial Rules" "http://localhost:8002/health" || true
@@ -109,32 +130,59 @@ echo "==========================================================================
 echo "🚀 STEP 2: SUBMIT CLAIM - ClaimLinc Agent"
 echo "================================================================================"
 
+STEP2_OK=0
+STEP3_OK=0
+STEP4_OK=0
+STEP5_OK=0
+STEP6_OK=0
+STEP7_OK=0
+STEP8_OK=0
+
 CLAIM_PAYLOAD=$(cat <<EOF
 {
-  "claimId": "$CLAIM_ID",
-  "patientId": "$PATIENT_ID",
-  "providerId": "$PROVIDER_ID",
-  "services": [
-    {
-      "code": "$SERVICE_CODE",
-      "description": "Office visit, established patient, level 3",
-      "amount": $AMOUNT
-    }
-  ],
-  "totalAmount": $AMOUNT,
-  "submissionDate": "$(date -Iseconds)",
-  "metadata": {
-    "source": "workflow_test",
-    "testRun": true
-  }
+  "patient_id": "$PATIENT_ID",
+  "provider_id": "$PROVIDER_ID",
+  "service_code": "$SERVICE_CODE",
+  "amount": $AMOUNT,
+  "diagnosis_codes": [],
+  "service_date": "$(date -I)",
+  "notes": "workflow_test"
 }
 EOF
 )
 
-# Try to submit claim to ClaimLinc agent
-api_call "POST" "http://localhost:8002/api/v1/claims/submit" "$CLAIM_PAYLOAD" "Submit claim to ClaimLinc" || {
-    echo -e "${YELLOW}⚠${NC} ClaimLinc API not available, simulating workflow..."
-}
+# Submit claim to ClaimLinc agent (capture claim_id when available)
+echo ""
+echo -e "${BLUE}→${NC} Submit claim to ClaimLinc"
+echo "  URL: ${CLAIMLINC_BASE}/api/v1/claims/submit"
+echo "  Method: POST"
+echo "  Payload: $CLAIM_PAYLOAD"
+
+SUBMIT_RESPONSE=$(curl -s -X "POST" \
+  -H "Content-Type: application/json" \
+  -d "$CLAIM_PAYLOAD" \
+  -w "\n%{http_code}" \
+  "${CLAIMLINC_BASE}/api/v1/claims/submit" 2>&1 || true)
+
+SUBMIT_HTTP_CODE=$(echo "$SUBMIT_RESPONSE" | tail -n 1)
+SUBMIT_BODY=$(echo "$SUBMIT_RESPONSE" | head -n -1)
+
+echo "  Response Code: $SUBMIT_HTTP_CODE"
+echo "  Response Body: ${SUBMIT_BODY:0:200}..."
+
+if [ "$SUBMIT_HTTP_CODE" = "201" ] || [ "$SUBMIT_HTTP_CODE" = "200" ]; then
+  echo -e "${GREEN}✓${NC} Success"
+  STEP2_OK=1
+  if command -v jq >/dev/null 2>&1; then
+    NEW_CLAIM_ID=$(echo "$SUBMIT_BODY" | jq -r '.claim_id // .claimId // empty' 2>/dev/null || true)
+    if [ -n "$NEW_CLAIM_ID" ]; then
+      CLAIM_ID="$NEW_CLAIM_ID"
+      echo -e "${GREEN}✓${NC} Using claim_id from ClaimLinc: $CLAIM_ID"
+    fi
+  fi
+else
+  echo -e "${YELLOW}⚠${NC} ClaimLinc API not available, simulating workflow..."
+fi
 
 echo ""
 echo "================================================================================"
@@ -143,19 +191,27 @@ echo "==========================================================================
 
 NORMALIZE_PAYLOAD=$(cat <<EOF
 {
-  "claimId": "$CLAIM_ID",
-  "sourceSystem": "local",
-  "sourceCode": "$SERVICE_CODE",
-  "targetSystem": "CHI"
+  "facility_id": $FACILITY_ID,
+  "internal_code": "$SERVICE_CODE",
+  "description": "Office visit, established patient, level 3"
 }
 EOF
 )
 
 # Try to normalize claim codes
-api_call "POST" "http://localhost:8000/api/v1/claims/normalize" "$NORMALIZE_PAYLOAD" "Normalize claim codes (AI translation)" || {
-    echo -e "${YELLOW}⚠${NC} Normalizer not ready, using mock normalized code"
+if api_call "POST" "http://localhost:8000/normalize" "$NORMALIZE_PAYLOAD" "Normalize claim codes (AI translation)"; then
+  STEP3_OK=1
+else
+  echo -e "${YELLOW}⚠${NC} Normalizer returned an error (often missing mapping), using mock normalized code"
     NORMALIZED_CODE="CHI_99213_EQUIV"
-}
+fi
+
+# If normalizer succeeded and jq is available, try extracting the mapped code
+if [ -z "${NORMALIZED_CODE:-}" ] && command -v jq >/dev/null 2>&1; then
+  NORMALIZED_CODE=$(curl -s --connect-timeout "$CURL_CONNECT_TIMEOUT" --max-time "$CURL_MAX_TIME" \
+    -X POST -H "Content-Type: application/json" -d "$NORMALIZE_PAYLOAD" \
+    "http://localhost:8000/normalize" | jq -r '.sbs_mapped_code // empty' 2>/dev/null || true)
+fi
 
 echo ""
 echo "================================================================================"
@@ -164,25 +220,33 @@ echo "==========================================================================
 
 RULES_PAYLOAD=$(cat <<EOF
 {
-  "claimId": "$CLAIM_ID",
-  "amount": $AMOUNT,
-  "serviceCode": "${NORMALIZED_CODE:-$SERVICE_CODE}",
-  "patientInfo": {
-    "patientId": "$PATIENT_ID",
-    "age": 45,
-    "gender": "M",
-    "insuranceType": "CHI"
+  "claim": {
+    "resourceType": "Claim",
+    "facility_id": $FACILITY_ID,
+    "id": "$CLAIM_ID",
+    "patient": {"reference": "Patient/$PATIENT_ID"},
+    "provider": {"reference": "Practitioner/$PROVIDER_ID"},
+    "item": [
+      {
+        "sequence": 1,
+        "productOrService": {"coding": [{"system": "$SBS_CODING_SYSTEM", "code": "${NORMALIZED_CODE:-$SERVICE_CODE}"}]},
+        "unitPrice": {"value": $AMOUNT, "currency": "SAR"},
+        "quantity": {"value": 1}
+      }
+    ]
   }
 }
 EOF
 )
 
 # Try to apply financial rules
-api_call "POST" "http://localhost:8002/api/v1/rules/apply" "$RULES_PAYLOAD" "Apply CHI financial rules" || {
-    echo -e "${YELLOW}⚠${NC} Financial Rules Engine not ready, assuming approval"
+if api_call "POST" "http://localhost:8002/validate" "$RULES_PAYLOAD" "Apply CHI financial rules"; then
+  STEP4_OK=1
+else
+  echo -e "${YELLOW}⚠${NC} Financial Rules returned an error (often missing facility config), assuming approval"
     APPROVED="true"
     APPROVED_AMOUNT="$AMOUNT"
-}
+fi
 
 echo ""
 echo "================================================================================"
@@ -191,22 +255,40 @@ echo "==========================================================================
 
 SIGN_PAYLOAD=$(cat <<EOF
 {
-  "documentId": "$CLAIM_ID",
-  "content": $(echo "$CLAIM_PAYLOAD" | jq -c .),
-  "signerInfo": {
-    "name": "System Automated Signer",
-    "role": "ClaimProcessor",
-    "credentials": "auto"
-  }
+  "payload": {
+    "resourceType": "Claim",
+    "facility_id": $FACILITY_ID,
+    "id": "$CLAIM_ID",
+    "patient": {"reference": "Patient/$PATIENT_ID"},
+    "provider": {"reference": "Practitioner/$PROVIDER_ID"},
+    "item": [
+      {
+        "sequence": 1,
+        "productOrService": {"coding": [{"system": "$SBS_CODING_SYSTEM", "code": "${NORMALIZED_CODE:-$SERVICE_CODE}"}]},
+        "unitPrice": {"value": $AMOUNT, "currency": "SAR"},
+        "quantity": {"value": 1}
+      }
+    ]
+  },
+  "facility_id": $FACILITY_ID
 }
 EOF
 )
 
 # Try to sign document
-api_call "POST" "http://localhost:8001/api/v1/documents/sign" "$SIGN_PAYLOAD" "Sign claim document digitally" || {
-    echo -e "${YELLOW}⚠${NC} Signer Service not ready, generating mock signature"
+if api_call "POST" "http://localhost:8001/sign" "$SIGN_PAYLOAD" "Sign claim document digitally"; then
+  STEP5_OK=1
+  if command -v jq >/dev/null 2>&1; then
+    SIGNATURE=$(echo "$API_CALL_BODY" | jq -r '.signature // empty' 2>/dev/null || true)
+  fi
+  if [ -z "${SIGNATURE:-}" ]; then
+    echo -e "${YELLOW}⚠${NC} Signer succeeded but signature could not be parsed, using mock signature"
     SIGNATURE="MOCK_SIG_$(date +%s | sha256sum | head -c 32)"
-}
+  fi
+else
+  echo -e "${YELLOW}⚠${NC} Signer error (often certificate/DB config), generating mock signature"
+  SIGNATURE="MOCK_SIG_$(date +%s | sha256sum | head -c 32)"
+fi
 
 echo ""
 echo "================================================================================"
@@ -215,17 +297,44 @@ echo "==========================================================================
 
 NPHIES_PAYLOAD=$(cat <<EOF
 {
-  "claimId": "$CLAIM_ID",
-  "claimData": $CLAIM_PAYLOAD,
-  "signature": "${SIGNATURE:-MOCK_SIGNATURE}"
+  "facility_id": $FACILITY_ID,
+  "fhir_payload": {
+    "resourceType": "Claim",
+    "facility_id": $FACILITY_ID,
+    "id": "$CLAIM_ID",
+    "patient": {"reference": "Patient/$PATIENT_ID"},
+    "provider": {"reference": "Practitioner/$PROVIDER_ID"},
+    "item": [
+      {
+        "sequence": 1,
+        "productOrService": {"coding": [{"system": "$SBS_CODING_SYSTEM", "code": "${NORMALIZED_CODE:-$SERVICE_CODE}"}]},
+        "unitPrice": {"value": $AMOUNT, "currency": "SAR"},
+        "quantity": {"value": 1}
+      }
+    ]
+  },
+  "signature": "${SIGNATURE:-MOCK_SIGNATURE}",
+  "resource_type": "Claim"
 }
 EOF
 )
 
 # Try to submit to NPHIES
-api_call "POST" "http://localhost:8003/api/v1/claims/submit" "$NPHIES_PAYLOAD" "Submit to NPHIES healthcare platform" || {
+OLD_CURL_MAX_TIME="$CURL_MAX_TIME"
+CURL_MAX_TIME=${CURL_MAX_TIME_NPHIES:-12}
+if api_call "POST" "http://localhost:8003/submit-claim" "$NPHIES_PAYLOAD" "Submit to NPHIES healthcare platform"; then
+  STEP6_OK=1
+  if command -v jq >/dev/null 2>&1; then
+    NPHIES_STATUS=$(echo "$API_CALL_BODY" | jq -r '.status // empty' 2>/dev/null || true)
+    if [ "$NPHIES_STATUS" = "error" ]; then
+      STEP6_OK=0
+      echo -e "${YELLOW}⚠${NC} NPHIES bridge responded but reported status=error (likely API key/network)"
+    fi
+  fi
+else
     echo -e "${YELLOW}⚠${NC} NPHIES Bridge not ready, workflow completed locally"
-}
+fi
+CURL_MAX_TIME="$OLD_CURL_MAX_TIME"
 
 echo ""
 echo "================================================================================"
@@ -233,9 +342,11 @@ echo "📊 STEP 7: CHECK CLAIM STATUS - ClaimLinc Agent"
 echo "================================================================================"
 
 # Try to check claim status
-api_call "GET" "http://localhost:8002/api/v1/claims/status/$CLAIM_ID" "" "Check claim processing status" || {
+if api_call "GET" "${CLAIMLINC_BASE}/api/v1/claims/$CLAIM_ID" "" "Check claim detail/status"; then
+  STEP7_OK=1
+else
     echo -e "${YELLOW}⚠${NC} Status endpoint not available"
-}
+fi
 
 echo ""
 echo "================================================================================"
@@ -244,16 +355,21 @@ echo "==========================================================================
 
 POLICY_PAYLOAD=$(cat <<EOF
 {
-  "policyId": "POL_${PATIENT_ID}",
-  "claimData": $CLAIM_PAYLOAD
+  "policy_number": "POL-${PATIENT_ID}",
+  "patient_id": "$PATIENT_ID",
+  "service_code": "$SERVICE_CODE",
+  "amount": $AMOUNT,
+  "service_date": "$(date -I)"
 }
 EOF
 )
 
 # Try to validate policy
-api_call "POST" "http://localhost:8003/api/v1/policies/validate" "$POLICY_PAYLOAD" "Validate patient policy coverage" || {
+if api_call "POST" "${POLICYLINC_BASE}/api/v1/policies/validate" "$POLICY_PAYLOAD" "Validate patient policy coverage"; then
+  STEP8_OK=1
+else
     echo -e "${YELLOW}⚠${NC} PolicyLinc not available"
-}
+fi
 
 echo ""
 echo "================================================================================"
@@ -274,46 +390,59 @@ echo "Submission Time: $(date)"
 echo ""
 echo "Workflow Steps:"
 echo "  1. ✓ Health Check - Services verified"
-echo "  2. ⚠ Claim Submission - Attempted (ClaimLinc)"
-echo "  3. ⚠ Code Normalization - Attempted (SBS Normalizer)"
-echo "  4. ⚠ Financial Rules - Attempted (SBS Financial Rules)"
-echo "  5. ⚠ Document Signing - Attempted (SBS Signer)"
-echo "  6. ⚠ NPHIES Submission - Attempted (SBS NPHIES Bridge)"
-echo "  7. ⚠ Status Check - Attempted (ClaimLinc)"
-echo "  8. ⚠ Policy Validation - Attempted (PolicyLinc)"
+if [ "$STEP2_OK" = "1" ]; then echo "  2. ✓ Claim Submission - Completed (ClaimLinc)"; else echo "  2. ⚠ Claim Submission - Failed (ClaimLinc)"; fi
+if [ "$STEP3_OK" = "1" ]; then echo "  3. ✓ Code Normalization - Completed (SBS Normalizer)"; else echo "  3. ⚠ Code Normalization - Failed (SBS Normalizer)"; fi
+if [ "$STEP4_OK" = "1" ]; then echo "  4. ✓ Financial Rules - Completed (SBS Financial Rules)"; else echo "  4. ⚠ Financial Rules - Failed (SBS Financial Rules)"; fi
+if [ "$STEP5_OK" = "1" ]; then echo "  5. ✓ Document Signing - Completed (SBS Signer)"; else echo "  5. ⚠ Document Signing - Failed (SBS Signer)"; fi
+if [ "$STEP6_OK" = "1" ]; then echo "  6. ✓ NPHIES Submission - Completed (SBS NPHIES Bridge)"; else echo "  6. ⚠ NPHIES Submission - Reported error (SBS NPHIES Bridge)"; fi
+if [ "$STEP7_OK" = "1" ]; then echo "  7. ✓ Status Check - Completed (ClaimLinc)"; else echo "  7. ⚠ Status Check - Failed (ClaimLinc)"; fi
+if [ "$STEP8_OK" = "1" ]; then echo "  8. ✓ Policy Validation - Completed (PolicyLinc)"; else echo "  8. ⚠ Policy Validation - Failed (PolicyLinc)"; fi
 echo ""
 echo "================================================================================"
 echo "🎯 ISSUES DETECTED"
 echo "================================================================================"
 echo ""
-echo "1. Backend API endpoints not fully implemented"
-echo "   → Need to add /api/v1/claims/submit, /api/v1/claims/status endpoints"
-echo ""
-echo "2. SBS services returning 503 (Service Unavailable)"
-echo "   → Services need 15-30 seconds for database initialization"
-echo "   → Retry after waiting for full startup"
-echo ""
-echo "3. Agent services not running on expected ports"
-echo "   → ClaimLinc expected on port 8002 (not responding)"
-echo "   → PolicyLinc expected on port 8003 (not responding)"
-echo "   → DoctorLinc expected on port 8010 (not tested)"
+ISSUES=0
+if [ "$STEP2_OK" != "1" ] || [ "$STEP7_OK" != "1" ]; then
+  ISSUES=1
+  echo "- ClaimLinc not fully reachable on port $((AGENT_BASE_PORT + 1))"
+fi
+if [ "$STEP8_OK" != "1" ]; then
+  ISSUES=1
+  echo "- PolicyLinc not reachable on port $((AGENT_BASE_PORT + 3))"
+fi
+if [ "$STEP3_OK" != "1" ]; then
+  ISSUES=1
+  echo "- SBS normalizer failed (check SBS DB mappings/facility)"
+fi
+if [ "$STEP4_OK" != "1" ]; then
+  ISSUES=1
+  echo "- SBS financial rules failed (check facility tier/pricing rules)"
+fi
+if [ "$STEP5_OK" != "1" ]; then
+  ISSUES=1
+  echo "- SBS signer failed (check facility certificates/DB connectivity)"
+fi
+if [ "$STEP6_OK" != "1" ]; then
+  ISSUES=1
+  echo "- NPHIES submission failed or returned status=error (check NPHIES API key/network/base URL)"
+fi
+if [ "$ISSUES" = "0" ]; then
+  echo "None detected (local workflow succeeded)."
+fi
 echo ""
 echo "================================================================================"
 echo "💡 RECOMMENDATIONS"
 echo "================================================================================"
 echo ""
 echo "Immediate Actions:"
-echo "  1. Wait 30 seconds and re-run this test"
-echo "  2. Implement health endpoints in all Python services"
-echo "  3. Add claim submission endpoints to services/claimlinc-api/"
-echo "  4. Add policy validation endpoints to services/policylinc-api/"
-echo "  5. Start all agent services using docker-compose"
+echo "  1. Re-run this test: MASTERLINC_BASE_PORT=$AGENT_BASE_PORT FACILITY_ID=$FACILITY_ID ./scripts/test-claim-workflow.sh"
+echo "  2. If agent startup fails due to pip conflicts, start with INSTALL_DEPS=0 (default)"
+echo "  3. If Step 6 reports status=error, configure SBS NPHIES (API key / base URL / outbound network)"
 echo ""
 echo "Frontend Integration:"
-echo "  1. Use the created service layers (agent-backend.service.ts, sbs-integration.service.ts)"
-echo "  2. Add retry logic with exponential backoff"
-echo "  3. Implement error boundaries for graceful failure handling"
-echo "  4. Add WebSocket connections for real-time status updates"
+echo "  1. Keep browser harness endpoints aligned with this script's payloads (coding.system + resource_type)"
+echo "  2. Add retry/backoff for SBS calls (Normalizer/Signer/NPHIES)"
 echo ""
 echo "================================================================================"
 echo "📝 TEST COMPLETE"

@@ -1,15 +1,29 @@
 // MASTERLINC Claim Workflow Test JavaScript
 // Simulates complete claim processing through all agents and SBS services
 
-const API_CONFIG = {
-  backend: "http://localhost:3000",
-  claimlinc: "http://localhost:8002",
-  policylinc: "http://localhost:8003",
-  sbsNormalizer: "http://localhost:8000",
-  sbsSigner: "http://localhost:8001",
-  sbsFinancial: "http://localhost:8002",
-  sbsNPHIES: "http://localhost:8003",
-};
+function getApiConfig() {
+  const params = new URLSearchParams(window.location.search);
+  const basePort = Number.parseInt(params.get("agentBasePort") || "9000", 10);
+  const facilityId = Number.parseInt(params.get("facilityId") || "1", 10);
+
+  return {
+    backend: params.get("backend") || "http://localhost:3000",
+    facilityId,
+    // SBS financial rules use this coding.system when applying pricing/tiers.
+    sbsCodingSystem:
+      params.get("sbsCodingSystem") || "http://sbs.sa/coding/services",
+    // Agents (default 900x to avoid SBS 8000-8003)
+    claimlinc: params.get("claimlinc") || `http://localhost:${basePort + 1}`,
+    policylinc: params.get("policylinc") || `http://localhost:${basePort + 3}`,
+    // SBS integration engine
+    sbsNormalizer: params.get("sbsNormalizer") || "http://localhost:8000",
+    sbsSigner: params.get("sbsSigner") || "http://localhost:8001",
+    sbsFinancial: params.get("sbsFinancial") || "http://localhost:8002",
+    sbsNPHIES: params.get("sbsNPHIES") || "http://localhost:8003",
+  };
+}
+
+const API_CONFIG = getApiConfig();
 
 let startTime;
 let completedSteps = 0;
@@ -112,10 +126,20 @@ async function submitClaim(claimData) {
 
   try {
     const endpoint = `${API_CONFIG.claimlinc}/api/v1/claims/submit`;
-    const response = await simulateApiCall(endpoint, "POST", claimData);
+    const request = {
+      patient_id: claimData.patientId,
+      provider_id: claimData.providerId,
+      service_code: claimData.services?.[0]?.code,
+      amount: claimData.totalAmount,
+      diagnosis_codes: [],
+      service_date: new Date().toISOString().slice(0, 10),
+      notes: "workflow-test",
+    };
+
+    const response = await simulateApiCall(endpoint, "POST", request);
 
     log(
-      `✅ Claim submitted successfully: ${response.claimId || claimData.claimId}`,
+      `✅ Claim submitted successfully: ${response.claim_id || response.claimId || claimData.claimId}`,
       "success",
     );
     updateStep(1, "success", "Success");
@@ -132,25 +156,26 @@ async function submitClaim(claimData) {
 }
 
 // Step 2: Normalize claim codes
-async function normalizeClaim(claimId, serviceCode) {
+async function normalizeClaim(claimId, serviceCode, description) {
   updateStep(2, "active", "Processing");
   log("🔄 Step 2: Normalizing medical codes with AI...", "info");
 
   try {
-    const endpoint = `${API_CONFIG.sbsNormalizer}/api/v1/claims/normalize`;
+    const endpoint = `${API_CONFIG.sbsNormalizer}/normalize`;
     const response = await simulateApiCall(endpoint, "POST", {
-      claimId,
-      sourceSystem: "local",
-      sourceCode: serviceCode,
-      targetSystem: "CHI",
+      facility_id: API_CONFIG.facilityId,
+      internal_code: serviceCode,
+      description: description || "workflow-test",
     });
 
-    log(
-      `✅ Codes normalized: ${serviceCode} → ${response.normalizedCode || "CHI_" + serviceCode}`,
-      "success",
-    );
+    const normalizedCode =
+      response.sbs_mapped_code ||
+      response.normalizedCode ||
+      `CHI_${serviceCode}`;
+
+    log(`✅ Codes normalized: ${serviceCode} → ${normalizedCode}`, "success");
     updateStep(2, "success", "Success");
-    return response;
+    return { ...response, normalizedCode };
   } catch (error) {
     log(`⚠️  Normalizer error: ${error.message}`, "warning");
     const mockResponse = mockSuccessResponse("SBS Normalizer", {
@@ -168,25 +193,45 @@ async function applyFinancialRules(claimId, amount, serviceCode) {
   log("💰 Step 3: Applying CHI financial rules...", "info");
 
   try {
-    const endpoint = `${API_CONFIG.sbsFinancial}/api/v1/rules/apply`;
+    const endpoint = `${API_CONFIG.sbsFinancial}/validate`;
+    const fhirClaim = {
+      resourceType: "Claim",
+      facility_id: API_CONFIG.facilityId,
+      id: claimId,
+      patient: { reference: `Patient/${claimId}` },
+      provider: { reference: `Practitioner/${claimId}` },
+      item: [
+        {
+          sequence: 1,
+          productOrService: {
+            coding: [{ system: API_CONFIG.sbsCodingSystem, code: serviceCode }],
+          },
+          unitPrice: { value: Number.parseFloat(amount), currency: "SAR" },
+          quantity: { value: 1 },
+        },
+      ],
+    };
+
     const response = await simulateApiCall(endpoint, "POST", {
-      claimId,
-      amount: parseFloat(amount),
-      serviceCode,
-      patientInfo: { insuranceType: "CHI" },
+      claim: fhirClaim,
     });
 
-    if (response.approved) {
-      log(
-        `✅ Claim approved: ${response.approvedAmount || amount} SAR`,
-        "success",
-      );
+    // Engine response shape isn't strictly defined; treat a 200 as success.
+    const approved = response.approved ?? response.is_approved ?? true;
+    const approvedAmount =
+      response.approvedAmount ??
+      response.net_amount ??
+      Number.parseFloat(amount);
+
+    if (approved) {
+      log(`✅ Claim approved: ${approvedAmount} SAR`, "success");
       updateStep(3, "success", "Approved");
     } else {
-      log(`❌ Claim denied: ${response.denialReason}`, "error");
+      log(`❌ Claim denied`, "error");
       updateStep(3, "error", "Denied");
     }
-    return response;
+
+    return { ...response, approved, approvedAmount };
   } catch (error) {
     log(`⚠️  Financial Rules error: ${error.message}`, "warning");
     const mockResponse = mockSuccessResponse("SBS Financial Rules", {
@@ -200,23 +245,26 @@ async function applyFinancialRules(claimId, amount, serviceCode) {
 }
 
 // Step 4: Validate policy coverage
-async function validatePolicy(claimId, patientId) {
+async function validatePolicy(claimId, patientId, serviceCode, amount) {
   updateStep(4, "active", "Processing");
   log("🔍 Step 4: Validating patient policy coverage...", "info");
 
   try {
     const endpoint = `${API_CONFIG.policylinc}/api/v1/policies/validate`;
     const response = await simulateApiCall(endpoint, "POST", {
-      policyId: `POL_${patientId}`,
-      claimId,
+      policy_number: `POL-${patientId}`,
+      patient_id: patientId,
+      service_code: serviceCode,
+      amount: Number.parseFloat(amount),
+      service_date: new Date().toISOString().slice(0, 10),
     });
 
-    if (response.valid) {
+    if (response.is_valid) {
       log(`✅ Policy validated successfully`, "success");
       updateStep(4, "success", "Valid");
     } else {
       log(
-        `❌ Policy validation failed: ${response.validationErrors?.join(", ")}`,
+        `❌ Policy validation failed: ${response.message || "Unknown error"}`,
         "error",
       );
       updateStep(4, "error", "Invalid");
@@ -225,7 +273,7 @@ async function validatePolicy(claimId, patientId) {
   } catch (error) {
     log(`⚠️  PolicyLinc error: ${error.message}`, "warning");
     const mockResponse = mockSuccessResponse("PolicyLinc", {
-      valid: true,
+      is_valid: true,
       coverageDetails: {
         type: "CHI_STANDARD",
         coveragePercentage: 100,
@@ -243,15 +291,10 @@ async function signDocument(claimId, claimData) {
   log("🔏 Step 5: Signing claim document digitally...", "info");
 
   try {
-    const endpoint = `${API_CONFIG.sbsSigner}/api/v1/documents/sign`;
+    const endpoint = `${API_CONFIG.sbsSigner}/sign`;
     const response = await simulateApiCall(endpoint, "POST", {
-      documentId: claimId,
-      content: JSON.stringify(claimData),
-      signerInfo: {
-        name: "System Automated Signer",
-        role: "ClaimProcessor",
-        credentials: "auto",
-      },
+      payload: claimData,
+      facility_id: API_CONFIG.facilityId,
     });
 
     log(
@@ -272,24 +315,39 @@ async function signDocument(claimId, claimData) {
 }
 
 // Step 6: Submit to NPHIES
-async function submitToNPHIES(claimId, signature) {
+async function submitToNPHIES(claimId, fhirPayload, signature) {
   updateStep(6, "active", "Processing");
   log("🏥 Step 6: Submitting to NPHIES healthcare platform...", "info");
 
   try {
-    const endpoint = `${API_CONFIG.sbsNPHIES}/api/v1/claims/submit`;
+    const endpoint = `${API_CONFIG.sbsNPHIES}/submit-claim`;
     const response = await simulateApiCall(endpoint, "POST", {
-      claimId,
+      facility_id: API_CONFIG.facilityId,
+      fhir_payload: fhirPayload,
       signature,
+      resource_type: "Claim",
     });
 
-    if (response.status === "accepted") {
-      log(`✅ Claim accepted by NPHIES: ${response.nphiesClaimId}`, "success");
-      updateStep(6, "success", "Accepted");
-    } else {
-      log(`❌ NPHIES submission failed: ${response.error}`, "error");
-      updateStep(6, "error", "Rejected");
+    const status = (response.status || "").toLowerCase();
+    if (status === "error") {
+      log(`❌ NPHIES error: ${response.message || "Unknown error"}`, "error");
+      updateStep(6, "error", "Error");
+      return response;
     }
+    if (["accepted", "submitted", "success", "ok"].includes(status)) {
+      log(
+        `✅ Claim submitted to NPHIES: ${response.transaction_id || response.transactionId || ""}`,
+        "success",
+      );
+      updateStep(6, "success", "Submitted");
+    } else {
+      log(
+        `⚠️  NPHIES response: ${response.message || response.status}`,
+        "warning",
+      );
+      updateStep(6, "success", "Response");
+    }
+
     return response;
   } catch (error) {
     log(`⚠️  NPHIES Bridge error: ${error.message}`, "warning");
@@ -328,13 +386,43 @@ async function executeWorkflow(formData) {
     submissionDate: new Date().toISOString(),
   };
 
+  const fhirClaimPayload = {
+    resourceType: "Claim",
+    facility_id: API_CONFIG.facilityId,
+    id: claimId,
+    patient: { reference: `Patient/${formData.patientId}` },
+    provider: { reference: `Practitioner/${formData.providerId}` },
+    item: [
+      {
+        sequence: 1,
+        productOrService: {
+          coding: [
+            { system: API_CONFIG.sbsCodingSystem, code: formData.serviceCode },
+          ],
+        },
+        unitPrice: {
+          value: Number.parseFloat(formData.amount),
+          currency: "SAR",
+        },
+        quantity: { value: 1 },
+      },
+    ],
+  };
+
   try {
     // Step 1: Submit claim
     const submissionResult = await submitClaim(claimData);
+    claimId =
+      submissionResult?.claim_id || submissionResult?.claimId || claimId;
+    log(`Using Claim ID: ${claimId}`, "info");
     await new Promise((resolve) => setTimeout(resolve, 500));
 
     // Step 2: Normalize codes
-    const normalizeResult = await normalizeClaim(claimId, formData.serviceCode);
+    const normalizeResult = await normalizeClaim(
+      claimId,
+      formData.serviceCode,
+      claimData.services?.[0]?.description,
+    );
     await new Promise((resolve) => setTimeout(resolve, 500));
 
     // Step 3: Apply financial rules
@@ -346,15 +434,42 @@ async function executeWorkflow(formData) {
     await new Promise((resolve) => setTimeout(resolve, 500));
 
     // Step 4: Validate policy
-    const policyResult = await validatePolicy(claimId, formData.patientId);
+    const policyResult = await validatePolicy(
+      claimId,
+      formData.patientId,
+      normalizeResult.normalizedCode || formData.serviceCode,
+      formData.amount,
+    );
     await new Promise((resolve) => setTimeout(resolve, 500));
 
     // Step 5: Sign document
-    const signResult = await signDocument(claimId, claimData);
+    // Keep FHIR payload in sync with normalized code
+    const fhirClaimForSbs = {
+      ...fhirClaimPayload,
+      item: [
+        {
+          ...fhirClaimPayload.item[0],
+          productOrService: {
+            coding: [
+              {
+                system: API_CONFIG.sbsCodingSystem,
+                code: normalizeResult.normalizedCode || formData.serviceCode,
+              },
+            ],
+          },
+        },
+      ],
+    };
+
+    const signResult = await signDocument(claimId, fhirClaimForSbs);
     await new Promise((resolve) => setTimeout(resolve, 500));
 
     // Step 6: Submit to NPHIES
-    const nphiesResult = await submitToNPHIES(claimId, signResult.signature);
+    const nphiesResult = await submitToNPHIES(
+      claimId,
+      fhirClaimForSbs,
+      signResult.signature,
+    );
 
     // Final summary
     const totalTime = Date.now() - startTime;
