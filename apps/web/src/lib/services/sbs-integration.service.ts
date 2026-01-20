@@ -58,9 +58,33 @@ export interface NPHIESSubmissionRequest {
 
 export interface NPHIESSubmissionResponse {
   submissionId: string;
-  status: "submitted" | "accepted" | "rejected";
+  status: "submitted" | "accepted" | "rejected" | "error";
   nphiesClaimId?: string;
   error?: string;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+async function readJsonSafe(response: Response): Promise<unknown> {
+  try {
+    return await response.json();
+  } catch {
+    return null;
+  }
+}
+
+function formatHttpError(response: Response, body: unknown): string {
+  if (isRecord(body)) {
+    const message =
+      (typeof body.message === "string" && body.message) ||
+      (typeof body.error === "string" && body.error) ||
+      (typeof body.detail === "string" && body.detail) ||
+      "";
+    if (message) return `${response.status} ${response.statusText}: ${message}`;
+  }
+  return `${response.status} ${response.statusText}`;
 }
 
 /**
@@ -89,7 +113,10 @@ export class SBSService {
     });
 
     if (!response.ok) {
-      throw new Error(`Normalizer service error: ${response.statusText}`);
+      const body = await readJsonSafe(response);
+      throw new Error(
+        `Normalizer service error: ${formatHttpError(response, body)}`,
+      );
     }
 
     return response.json();
@@ -110,7 +137,10 @@ export class SBSService {
     });
 
     if (!response.ok) {
-      throw new Error(`Code translation error: ${response.statusText}`);
+      const body = await readJsonSafe(response);
+      throw new Error(
+        `Code translation error: ${formatHttpError(response, body)}`,
+      );
     }
 
     const data = await response.json();
@@ -130,7 +160,10 @@ export class SBSService {
     });
 
     if (!response.ok) {
-      throw new Error(`Signer service error: ${response.statusText}`);
+      const body = await readJsonSafe(response);
+      throw new Error(
+        `Signer service error: ${formatHttpError(response, body)}`,
+      );
     }
 
     return response.json();
@@ -150,7 +183,10 @@ export class SBSService {
     });
 
     if (!response.ok) {
-      throw new Error(`Signature verification error: ${response.statusText}`);
+      const body = await readJsonSafe(response);
+      throw new Error(
+        `Signature verification error: ${formatHttpError(response, body)}`,
+      );
     }
 
     const data = await response.json();
@@ -170,7 +206,10 @@ export class SBSService {
     });
 
     if (!response.ok) {
-      throw new Error(`Financial rules error: ${response.statusText}`);
+      const body = await readJsonSafe(response);
+      throw new Error(
+        `Financial rules error: ${formatHttpError(response, body)}`,
+      );
     }
 
     return response.json();
@@ -190,7 +229,10 @@ export class SBSService {
     });
 
     if (!response.ok) {
-      throw new Error(`Claim validation error: ${response.statusText}`);
+      const body = await readJsonSafe(response);
+      throw new Error(
+        `Claim validation error: ${formatHttpError(response, body)}`,
+      );
     }
 
     const data = await response.json();
@@ -209,11 +251,28 @@ export class SBSService {
       body: JSON.stringify(request),
     });
 
+    const body = await readJsonSafe(response);
+
     if (!response.ok) {
-      throw new Error(`NPHIES submission error: ${response.statusText}`);
+      throw new Error(
+        `NPHIES submission error: ${formatHttpError(response, body)}`,
+      );
     }
 
-    return response.json();
+    // SBS bridge may return HTTP 200 but `status=error` for upstream/config issues.
+    if (isRecord(body) && typeof body.status === "string") {
+      const statusValue = body.status.toLowerCase();
+      if (statusValue === "error") {
+        const message =
+          (typeof body.error === "string" && body.error) ||
+          (typeof body.message === "string" && body.message) ||
+          (typeof body.detail === "string" && body.detail) ||
+          "NPHIES bridge returned status=error";
+        throw new Error(message);
+      }
+    }
+
+    return (body ?? {}) as NPHIESSubmissionResponse;
   }
 
   /**

@@ -70,11 +70,12 @@ export const apiConfig: APIConfig = {
     n8n: env("VITE_SBS_N8N_URL", "http://localhost:5678"),
   },
   agents: {
-    authlinc: env("VITE_AUTHLINC_URL", "http://localhost:8001"),
-    claimlinc: env("VITE_CLAIMLINC_URL", "http://localhost:8002"),
-    doctorlinc: env("VITE_DOCTORLINC_URL", "http://localhost:8010"),
-    policylinc: env("VITE_POLICYLINC_URL", "http://localhost:8003"),
-    masterlinc: env("VITE_MASTERLINC_URL", "http://localhost:8000"),
+    // Agents run on 900x by default to avoid SBS ports 8000-8003.
+    authlinc: env("VITE_AUTHLINC_URL", "http://localhost:9005"),
+    claimlinc: env("VITE_CLAIMLINC_URL", "http://localhost:9001"),
+    doctorlinc: env("VITE_DOCTORLINC_URL", "http://localhost:9002"),
+    policylinc: env("VITE_POLICYLINC_URL", "http://localhost:9003"),
+    masterlinc: env("VITE_MASTERLINC_URL", "http://localhost:9000"),
   },
   mcp: {
     enabled: envBool("VITE_MCP_ENABLED", true),
@@ -107,7 +108,8 @@ export const agentEndpoints = {
   // ClaimLinc Agent
   claimlinc: {
     submit: `${apiConfig.agents.claimlinc}/api/v1/claims/submit`,
-    status: `${apiConfig.agents.claimlinc}/api/v1/claims/status`,
+    // Claim status/detail is `GET /api/v1/claims/{claim_id}`.
+    status: `${apiConfig.agents.claimlinc}/api/v1/claims`,
     list: `${apiConfig.agents.claimlinc}/api/v1/claims`,
   },
   // DoctorLinc Agent
@@ -141,19 +143,21 @@ export const agentEndpoints = {
  */
 export const sbsEndpoints = {
   normalizer: {
-    normalize: `${apiConfig.sbs.normalizer}/api/v1/claims/normalize`,
+    normalize: `${apiConfig.sbs.normalizer}/normalize`,
+    // Some SBS deployments may expose a versioned translate endpoint.
     codes: `${apiConfig.sbs.normalizer}/api/v1/codes/translate`,
   },
   signer: {
-    sign: `${apiConfig.sbs.signer}/api/v1/documents/sign`,
-    verify: `${apiConfig.sbs.signer}/api/v1/documents/verify`,
+    sign: `${apiConfig.sbs.signer}/sign`,
+    verify: `${apiConfig.sbs.signer}/verify`,
   },
   financialRules: {
-    apply: `${apiConfig.sbs.financialRules}/api/v1/rules/apply`,
-    validate: `${apiConfig.sbs.financialRules}/api/v1/rules/validate`,
+    // SBS financial rules engine uses a single validate route in the validated stack.
+    apply: `${apiConfig.sbs.financialRules}/validate`,
+    validate: `${apiConfig.sbs.financialRules}/validate`,
   },
   nphiesBridge: {
-    submit: `${apiConfig.sbs.nphiesBridge}/api/v1/claims/submit`,
+    submit: `${apiConfig.sbs.nphiesBridge}/submit-claim`,
     status: `${apiConfig.sbs.nphiesBridge}/api/v1/claims/status`,
   },
   n8n: {

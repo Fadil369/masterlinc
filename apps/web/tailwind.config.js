@@ -10,19 +10,21 @@ try {
     theme = JSON.parse(fs.readFileSync(themePath, "utf-8"));
   }
 } catch (err) {
-  console.error('failed to parse custom styles', err)
+  console.error("failed to parse custom styles", err);
 }
 const defaultTheme = {
   container: {
     center: true,
     padding: "2rem",
+    screens: {
+      sm: "640px",
+      md: "768px",
+      lg: "1024px",
+      xl: "1280px",
+      "2xl": "1536px",
+    },
   },
   extend: {
-    screens: {
-      coarse: { raw: "(pointer: coarse)" },
-      fine: { raw: "(pointer: fine)" },
-      pwa: { raw: "(display-mode: standalone)" },
-    },
     colors: {
       neutral: {
         1: "var(--color-neutral-1)",
@@ -139,9 +141,16 @@ const defaultTheme = {
     96: "var(--size-96)",
   },
   darkMode: ["selector", '[data-appearance="dark"]'],
-}
+};
 
 export default {
   content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
   theme: { ...defaultTheme, ...theme },
+  plugins: [
+    ({ addVariant }) => {
+      addVariant("coarse", "@media (pointer: coarse)");
+      addVariant("fine", "@media (pointer: fine)");
+      addVariant("pwa", "@media (display-mode: standalone)");
+    },
+  ],
 };
