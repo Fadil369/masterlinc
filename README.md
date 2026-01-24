@@ -277,6 +277,33 @@ turbo run build --filter=./apps/*
 | `pnpm docker:up` | Start Docker services |
 | `pnpm docker:down` | Stop Docker services |
 
+## 🔗 Ecosystem Integration
+
+MasterLinc serves as the central orchestration hub for the BrainSAIT healthcare AI ecosystem:
+
+### Agent Specifications
+Agent specifications are defined in `agents/specs/` using YAML format:
+- **masterlinc.yaml** - Central orchestration agent
+- **claimlinc.yaml** - Claims processing agent
+- **policylinc.yaml** - Policy interpretation agent
+- **doctorlinc.yaml** - Clinical decision support agent
+
+### Integration Points
+| Repository | Integration | Status |
+|------------|-------------|--------|
+| [sbs](https://github.com/Fadil369/sbs) | NPHIES claims processing | ✅ Ready |
+| [brainsait-docs](https://github.com/Fadil369/brainsait-docs) | Centralized documentation | ✅ Ready |
+| [-awesome-brainsait-copilot](https://github.com/Fadil369/-awesome-brainsait-copilot) | Copilot agent prompts | ✅ Ready |
+
+### Running Integration Tests
+```bash
+# Start services
+docker-compose -f infrastructure/docker/docker-compose.agents.yml up -d
+
+# Run integration tests
+./tests/integration/test-services.sh
+```
+
 ## 🤝 Contributing
 
 We welcome contributions! Please see our contributing guidelines in the docs.

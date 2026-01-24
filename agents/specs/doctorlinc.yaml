@@ -1,0 +1,111 @@
+# DoctorLinc Agent Specification
+# Clinical decision support agent
+
+agent_id: doctorlinc
+name: DoctorLinc
+name_ar: دكتور لينك
+version: "1.0.0"
+category: healthcare
+status: active
+
+description: |
+  Clinical decision support agent for healthcare providers.
+  Provides diagnosis assistance, treatment recommendations, and drug interaction checking.
+  
+description_ar: |
+  وكيل دعم القرار السريري لمقدمي الرعاية الصحية.
+  يوفر المساعدة في التشخيص، وتوصيات العلاج، والتحقق من تفاعلات الأدوية.
+
+capabilities:
+  - clinical_support     # Clinical decision support
+  - diagnosis           # Diagnosis assistance
+  - treatment           # Treatment recommendations
+  - drug_interactions   # Drug interaction checking
+
+endpoints:
+  base_url: http://doctorlinc-api:8002
+  health: /health
+  api_prefix: /api/v1
+
+api_endpoints:
+  - name: diagnose
+    path: /api/v1/diagnose
+    method: POST
+    description: Provide diagnosis assistance based on symptoms
+    input_schema:
+      type: object
+      required: [symptoms]
+      properties:
+        symptoms:
+          type: array
+          items: { type: string }
+        patient_history: { type: object }
+    output_schema:
+      type: object
+      properties:
+        diagnosis_id: { type: string }
+        possible_diagnoses:
+          type: array
+          items:
+            type: object
+            properties:
+              code: { type: string }
+              name: { type: string }
+              system: { type: string }
+        confidence_scores: { type: array, items: { type: number } }
+        recommendations: { type: array, items: { type: string } }
+
+  - name: check_interactions
+    path: /api/v1/interactions/check
+    method: POST
+    description: Check drug interactions
+    input_schema:
+      type: object
+      required: [medications]
+      properties:
+        medications:
+          type: array
+          items: { type: string }
+    output_schema:
+      type: object
+      properties:
+        interactions:
+          type: array
+          items:
+            type: object
+            properties:
+              drugs: { type: array }
+              severity: { type: string }
+              description: { type: string }
+
+  - name: recommend_treatment
+    path: /api/v1/treatment/recommend
+    method: POST
+    description: Get treatment recommendations
+    input_schema:
+      type: object
+      required: [diagnosis_code]
+      properties:
+        diagnosis_code: { type: string }
+        patient_profile: { type: object }
+
+integration:
+  masterlinc:
+    enabled: true
+    execute_endpoint: /execute
+    
+  fhir:
+    enabled: true
+    version: R4
+
+coding_systems:
+  - ICD-10   # Diagnosis codes
+  - CPT      # Procedure codes
+  - SNOMED   # Clinical terminology
+  - RxNorm   # Drug terminology
+
+security:
+  authentication: jwt
+  authorization: rbac
+  data_classification: phi
+  encryption: required

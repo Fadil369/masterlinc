@@ -33,7 +33,7 @@ pids
 .turbo
 
 # pnpm
-pnpm-lock.yaml
+# pnpm-lock.yaml should be committed for CI reproducibility
 
 # Build outputs
 apps/*/dist

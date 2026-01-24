@@ -1,0 +1,103 @@
+# PolicyLinc Agent Specification
+# Payer policy interpretation and eligibility verification agent
+
+agent_id: policylinc
+name: PolicyLinc
+name_ar: بوليسي لينك
+version: "1.0.0"
+category: healthcare
+status: active
+
+description: |
+  Payer policy interpretation agent for healthcare insurance.
+  Provides eligibility verification, coverage checks, and policy rule interpretation.
+  
+description_ar: |
+  وكيل تفسير سياسات الدافع للتأمين الصحي.
+  يوفر التحقق من الأهلية، وفحوصات التغطية، وتفسير قواعد السياسة.
+
+capabilities:
+  - policy_interpretation  # Interpret payer policies
+  - eligibility           # Patient eligibility checks
+  - coverage              # Coverage verification
+  - pre_authorization     # Pre-authorization support
+
+endpoints:
+  base_url: http://policylinc-api:8003
+  health: /health
+  api_prefix: /api/v1
+
+api_endpoints:
+  - name: check_eligibility
+    path: /api/v1/eligibility/check
+    method: POST
+    description: Check patient eligibility with payer
+    input_schema:
+      type: object
+      required: [patient_id, payer_id]
+      properties:
+        patient_id: { type: string }
+        payer_id: { type: string }
+        service_date: { type: string, format: date }
+        service_type: { type: string }
+    output_schema:
+      type: object
+      properties:
+        eligibility_id: { type: string }
+        is_eligible: { type: boolean }
+        coverage_details: { type: object }
+        coverage_details_ar: { type: object }
+
+  - name: verify_coverage
+    path: /api/v1/coverage/verify
+    method: POST
+    description: Verify coverage for specific service
+    input_schema:
+      type: object
+      required: [patient_id, service_code]
+      properties:
+        patient_id: { type: string }
+        service_code: { type: string }
+        service_date: { type: string, format: date }
+    output_schema:
+      type: object
+      properties:
+        verification_id: { type: string }
+        is_covered: { type: boolean }
+        copay_amount: { type: number }
+        deductible_remaining: { type: number }
+
+  - name: interpret_policy
+    path: /api/v1/policy/interpret
+    method: POST
+    description: Interpret specific policy rules
+    input_schema:
+      type: object
+      required: [payer_id, rule_query]
+      properties:
+        payer_id: { type: string }
+        rule_query: { type: string }
+        context: { type: object }
+
+integration:
+  masterlinc:
+    enabled: true
+    execute_endpoint: /execute
+    
+  nphies:
+    enabled: true
+    api_version: "2.0"
+    
+  fhir:
+    enabled: true
+    version: R4
+
+performance_targets:
+  eligibility_check_ms: 1000
+  coverage_verification_ms: 500
+
+security:
+  authentication: jwt
+  authorization: rbac
+  data_classification: phi
+  encryption: required

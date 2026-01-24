@@ -1,0 +1,109 @@
+# ClaimLinc Agent Specification
+# Intelligent claims processing agent for NPHIES integration
+
+agent_id: claimlinc
+name: ClaimLinc
+name_ar: كلايم لينك
+version: "1.0.0"
+category: healthcare
+status: active
+
+description: |
+  Intelligent claims processing agent for healthcare insurance.
+  Provides FHIR claim validation, rejection analysis, and resubmission recommendations.
+  
+description_ar: |
+  وكيل معالجة المطالبات الذكي للتأمين الصحي.
+  يوفر التحقق من مطالبات FHIR، وتحليل الرفض، وتوصيات إعادة التقديم.
+
+capabilities:
+  - validation     # FHIR claim validation
+  - analysis       # Rejection root cause analysis
+  - patterns       # Pattern detection across claims
+  - recommendations # Resubmission recommendations
+
+endpoints:
+  base_url: http://claimlinc-api:8001
+  health: /health
+  api_prefix: /api/v1
+
+api_endpoints:
+  - name: validate
+    path: /api/v1/validate
+    method: POST
+    description: Validate FHIR Claim through 5-layer validation
+    input_schema:
+      type: object
+      required: [claim_resource]
+      properties:
+        claim_resource:
+          type: object
+          description: FHIR Claim resource
+        validation_level:
+          type: string
+          enum: [basic, standard, full]
+          default: full
+    output_schema:
+      type: object
+      properties:
+        validation_id: { type: string }
+        is_valid: { type: boolean }
+        layers: { type: array }
+        summary: { type: string }
+        summary_ar: { type: string }
+
+  - name: analyze
+    path: /api/v1/analyze
+    method: POST
+    description: Analyze claim rejection with AI-powered recommendations
+    input_schema:
+      type: object
+      required: [claim_id, rejection_code]
+      properties:
+        claim_id: { type: string }
+        rejection_code: { type: string }
+        rejection_description: { type: string }
+        claim_data: { type: object }
+    output_schema:
+      type: object
+      properties:
+        analysis_id: { type: string }
+        root_cause: { type: string }
+        root_cause_ar: { type: string }
+        recommendations: { type: array }
+        confidence_score: { type: number }
+
+  - name: batch_analyze
+    path: /api/v1/batch/analyze
+    method: POST
+    description: Analyze patterns across multiple claims
+    input_schema:
+      type: object
+      required: [claim_ids]
+      properties:
+        claim_ids: { type: array, items: { type: string } }
+        time_range_days: { type: integer, default: 30 }
+
+integration:
+  masterlinc:
+    enabled: true
+    execute_endpoint: /execute
+    
+  nphies:
+    enabled: true
+    api_version: "2.0"
+    
+  fhir:
+    enabled: true
+    version: R4
+
+performance_targets:
+  validation_time_ms: 500
+  analysis_time_ms: 2000
+  clean_claims_rate: 0.98
+
+security:
+  authentication: jwt
+  authorization: rbac
+  data_classification: phi
+  encryption: required
