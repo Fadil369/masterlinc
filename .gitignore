@@ -1,69 +1,61 @@
 # Dependencies
 node_modules/
-*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
+.pnpm-debug.log*
 
 # Build outputs
-.next/
-out/
 dist/
 build/
-*.tsbuildinfo
+*.log
 
-# Cloudflare
-.wrangler/
-**/.mf/
-
-# Environment variables
+# Environment
 .env
 .env.local
-.env.development.local
-.env.test.local
-.env.production.local
+.env.*.local
 
 # IDE
 .vscode/
 .idea/
 *.swp
 *.swo
+*~
 
 # OS
 .DS_Store
 Thumbs.db
 
-# Large files
-*.tar.gz
-*.zip
-*.tar
-*.tgz
-
-# Backup files
-*.bak
-*.backup
-
-# Temporary files
+# Temporary
 tmp/
 temp/
 *.tmp
-*.temp
 
-# Logs
-logs/
-*.log
+# Personal/Config files
+.claude/
+.cursor/
+.rovodev/
+.github/copilot/
+.config/
+.aws/
+.azure/
+.ssh/
+.gnupg/
+*.pem
+*.key
+*.crt
 
-# Database
-*.db
-*.sqlite
-*.sqlite3
-
-# Coverage
-coverage/
-.nyc_output/
+# Large directories
+Library/
+Applications/
+Documents/
+Downloads/
+Desktop/
+Movies/
+Music/
+Pictures/
+Public/
 
 # Misc
-*.pid
-*.seed
+*.rtf
+.CFUserTextEncoding
