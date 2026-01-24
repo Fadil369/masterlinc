@@ -6,7 +6,7 @@
 import { Pool, type PoolClient } from 'pg';
 import Redis from 'ioredis';
 import { MongoClient, type Db } from 'mongodb';
-import pino from 'pino';
+import { pino } from 'pino';
 
 const logger = pino({ name: 'database' });
 

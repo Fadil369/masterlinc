@@ -5,7 +5,7 @@
  */
 
 import express, { type Request, type Response } from 'express';
-import pino from 'pino';
+import { pino } from 'pino';
 import { loadConfig } from './config/config.js';
 import { ServiceRegistry } from './services/service-registry.js';
 import { BasmaIntegration } from './services/basma-integration.js';

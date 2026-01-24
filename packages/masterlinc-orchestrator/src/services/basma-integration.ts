@@ -4,7 +4,7 @@
  */
 
 import axios from 'axios';
-import pino from 'pino';
+import { pino } from 'pino';
 import type { ServiceRegistry } from './service-registry.js';
 
 const logger = pino({ name: 'basma-integration' });

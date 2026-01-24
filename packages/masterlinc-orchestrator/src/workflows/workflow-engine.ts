@@ -3,7 +3,7 @@
  * Manages end-to-end patient journey workflows from call to claims submission
  */
 
-import pino from 'pino';
+import { pino } from 'pino';
 import type { BasmaIntegration } from '../services/basma-integration.js';
 import type { HealthcareIntegration, Patient, Appointment } from '../services/healthcare-integration.js';
 import type { OIDIntegration } from '../services/oid-integration.js';

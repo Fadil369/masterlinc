@@ -4,7 +4,7 @@
  */
 
 import axios from 'axios';
-import pino from 'pino';
+import { pino } from 'pino';
 
 const logger = pino({ name: 'service-registry' });
 
