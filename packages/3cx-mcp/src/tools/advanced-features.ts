@@ -42,7 +42,7 @@ export const ScheduleCallSchema = z.object({
   reminder: z.boolean().optional().describe('Send reminder before call'),
 });
 
-export const CallWh isperSchema = z.object({
+export const CallWhisperSchema = z.object({
   extension: z.string().describe('Supervisor extension'),
   targetCallId: z.string().describe('Call ID to whisper into'),
   message: z.string().describe('Message to whisper'),
