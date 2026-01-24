@@ -33,7 +33,7 @@ const configSchema = z.object({
   BASMA_URL: z.string().default('https://basma-voice-chat-app--fadil369.github.app'),
   HEALTHCARE_URL: z.string().default('https://brainsait-healthcare--fadil369.github.app'),
   OID_URL: z.string().default('https://brainsait-oid-integr--fadil369.github.app'),
-  SBS_URL: z.string().default('https://sbs--fadil369.github.app'),
+  SBS_URL: z.string().default('https://fadil369.github.io/sbs/'),
   
   // AI & NLP
   ANTHROPIC_API_KEY: z.string().optional(),

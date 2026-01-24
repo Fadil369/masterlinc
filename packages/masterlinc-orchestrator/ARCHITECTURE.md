@@ -215,7 +215,7 @@ intake → triage → booking → service → claims → completed
 | Basma Voice | basma-voice-chat-app--fadil369.github.app | /health | 🔄 |
 | Healthcare | brainsait-healthcare--fadil369.github.app | /health | 🔄 |
 | OID Service | brainsait-oid-integr--fadil369.github.app | /health | 🔄 |
-| SBS Claims | sbs--fadil369.github.app | /health | 🔄 |
+| SBS Claims | fadil369.github.io/sbs/ | /health | 🔄 |
 
 ---
 

@@ -8,7 +8,7 @@ const SERVICES = [
   { name: 'Basma Voice', url: 'https://basma-voice-chat-app--fadil369.github.app/health' },
   { name: 'Healthcare', url: 'https://brainsait-healthcare--fadil369.github.app/health' },
   { name: 'OID Service', url: 'https://brainsait-oid-integr--fadil369.github.app/health' },
-  { name: 'SBS Claims', url: 'https://sbs--fadil369.github.app/health' },
+  { name: 'SBS Claims', url: 'https://fadil369.github.io/sbs/health' },
 ];
 
 async function verify() {

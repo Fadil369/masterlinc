@@ -114,7 +114,7 @@ export class ServiceRegistry {
       {
         id: 'sbs-claims',
         name: 'SBS Claims Management',
-        url: 'https://sbs--fadil369.github.app',
+        url: 'https://fadil369.github.io/sbs/',
         healthEndpoint: '/health',
         status: 'unknown',
         lastCheck: new Date(),
