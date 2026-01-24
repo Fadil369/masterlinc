@@ -269,16 +269,16 @@ export class MasterLincCoordinator {
    */
   async routeCall(call: ActiveCall): Promise<{ agent: string; workflow: string; action: string }> {
     const context: CallContext = {
-      callId: call.Id,
-      caller: call.Participants?.[0]?.Dn || 'unknown',
-      callee: call.Participants?.[1]?.Dn || '',
+      callId: String(call.Id),
+      caller: call.Caller || 'unknown',
+      callee: call.Callee || '',
       extension: this.config.PBX_DEFAULT_EXTENSION,
       direction: 'inbound',
       duration: 0,
       metadata: {},
     };
 
-    this.activeContexts.set(call.Id, context);
+    this.activeContexts.set(String(call.Id), context);
 
     // Check for emergency keywords in caller ID or metadata
     if (context.metadata.emergency) {
@@ -488,7 +488,7 @@ export class MasterLincCoordinator {
     const inboundCalls = logs.filter((l) => l.Direction === 'Inbound').length;
     const outboundCalls = logs.filter((l) => l.Direction === 'Outbound').length;
     const avgDuration =
-      logs.reduce((sum, l) => sum + (l.DurationSeconds || 0), 0) / totalCalls || 0;
+      logs.reduce((sum, l) => sum + (l.Duration || 0), 0) / totalCalls || 0;
 
     return {
       totalCalls,

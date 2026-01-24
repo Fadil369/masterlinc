@@ -98,4 +98,29 @@ export class CallControlClient {
   async getParticipants(extension: string): Promise<Participant[]> {
     return this.request<Participant[]>(`/${extension}/participants`);
   }
+
+  async transferCall(
+    extension: string,
+    participantId: string,
+    destination: string,
+    type: 'blind' | 'attended' = 'blind',
+  ): Promise<CallControlResponse> {
+    if (type === 'blind') {
+      return this.transferBlind(extension, participantId, destination);
+    } else {
+      return this.transferAttended(extension, participantId, destination);
+    }
+  }
+
+  async recordCall(
+    extension: string,
+    participantId: string,
+    action: 'start' | 'stop',
+  ): Promise<CallControlResponse> {
+    if (action === 'start') {
+      return this.startRecording(extension, participantId);
+    } else {
+      return this.stopRecording(extension, participantId);
+    }
+  }
 }

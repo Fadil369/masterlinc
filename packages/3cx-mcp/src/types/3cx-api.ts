@@ -18,7 +18,7 @@ export interface Extension {
 }
 
 export interface ActiveCall {
-  Id: number;
+  Id: string;
   ParticipantId: string;
   Caller: string;
   Callee: string;
@@ -27,6 +27,7 @@ export interface ActiveCall {
   Duration: number;
   Extension: string;
   StartTime: string;
+  Participants?: Array<{ Dn: string; DisplayName?: string }>;
 }
 
 export interface CallLogEntry {
@@ -38,6 +39,7 @@ export interface CallLogEntry {
   StartTime: string;
   EndTime: string;
   Duration: number;
+  DurationSeconds?: number;
   Direction: 'Inbound' | 'Outbound' | 'Internal';
   Status: 'Answered' | 'Missed' | 'Busy' | 'Failed';
   RecordingUrl?: string;
@@ -76,6 +78,7 @@ export interface CallControlResponse {
   success: boolean;
   participantId?: string;
   message?: string;
+  Id?: string;
 }
 
 export interface WebSocketEvent {

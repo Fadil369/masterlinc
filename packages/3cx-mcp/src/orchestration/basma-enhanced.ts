@@ -119,7 +119,7 @@ export class BasmaEnhanced {
     }
 
     const formData = new FormData();
-    const audioBlob = new Blob([audioBuffer], { type: 'audio/wav' });
+    const audioBlob = new Blob([new Uint8Array(audioBuffer)], { type: 'audio/wav' });
     formData.append('file', audioBlob, 'audio.wav');
     formData.append('model', 'whisper-1');
     if (language !== 'auto') {
