@@ -1,0 +1,121 @@
+{
+  "spark": {
+    "version": "1.0",
+    "project": {
+      "name": "MasterLinc Ecosystem",
+      "description": "Unified AI-powered system orchestration platform",
+      "repository": "https://github.com/fadil369/masterlinc",
+      "branches": ["main", "develop", "add-chat-deps-6f222"]
+    },
+    "services": [
+      {
+        "name": "3cx-mcp-server",
+        "path": "packages/3cx-mcp",
+        "type": "mcp",
+        "runtime": "node:22",
+        "port": 3000,
+        "build": "npm run build",
+        "start": "node dist/index.js",
+        "env": {
+          "PBX_FQDN": "${PBX_FQDN}",
+          "PBX_USERNAME": "${PBX_USERNAME}",
+          "PBX_PASSWORD": "${PBX_PASSWORD}",
+          "ANTHROPIC_API_KEY": "${ANTHROPIC_API_KEY}",
+          "OPENAI_API_KEY": "${OPENAI_API_KEY}"
+        },
+        "health": "/health"
+      },
+      {
+        "name": "masterlinc-coordinator",
+        "path": "packages/masterlinc",
+        "type": "orchestration",
+        "runtime": "node:22",
+        "port": 4000,
+        "build": "npm run build",
+        "start": "node dist/index.js"
+      },
+      {
+        "name": "basma-voice-ai",
+        "path": "packages/basma",
+        "type": "ai-service",
+        "runtime": "node:22",
+        "port": 5000,
+        "capabilities": ["stt", "tts", "nlp", "emotion-detection"]
+      },
+      {
+        "name": "web-dashboard",
+        "path": "packages/3cx-mcp/web",
+        "type": "static",
+        "port": 3001,
+        "routes": [
+          {"path": "/", "file": "index.html"},
+          {"path": "/api/*", "proxy": "http://3cx-mcp-server:3000"}
+        ]
+      },
+      {
+        "name": "prometheus",
+        "type": "monitoring",
+        "port": 9090,
+        "scrapeTargets": [
+          "3cx-mcp-server:3000/metrics",
+          "masterlinc-coordinator:4000/metrics"
+        ]
+      },
+      {
+        "name": "grafana",
+        "type": "visualization",
+        "port": 3002,
+        "datasources": ["prometheus"],
+        "dashboards": ["packages/3cx-mcp/grafana-dashboard.json"]
+      }
+    ],
+    "storage": {
+      "redis": {
+        "version": "7-alpine",
+        "port": 6379,
+        "persistence": true,
+        "volumes": ["redis-data:/data"]
+      }
+    },
+    "networks": {
+      "brainsait": {
+        "driver": "bridge",
+        "services": [
+          "3cx-mcp-server",
+          "masterlinc-coordinator",
+          "basma-voice-ai",
+          "redis",
+          "prometheus",
+          "grafana"
+        ]
+      }
+    },
+    "deployment": {
+      "strategy": "rolling",
+      "healthCheck": true,
+      "autoRestart": true,
+      "scaling": {
+        "enabled": true,
+        "minInstances": 1,
+        "maxInstances": 5,
+        "cpuThreshold": 70,
+        "memoryThreshold": 80
+      }
+    },
+    "monitoring": {
+      "logs": {
+        "driver": "json-file",
+        "maxSize": "10m",
+        "maxFiles": 3
+      },
+      "metrics": {
+        "enabled": true,
+        "interval": "15s"
+      },
+      "alerts": {
+        "enabled": true,
+        "channels": ["slack", "email"]
+      }
+    }
+  }
+}

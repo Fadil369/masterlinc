@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "3cx": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["/Users/fadil369/packages/3cx-mcp/dist/index.js"],
+      "environment": {
+        "PBX_FQDN": "1593.3cx.cloud",
+        "PBX_USERNAME": "dr.mf.12298@gmail.com",
+        "PBX_PASSWORD": "HFLC1rjZlPHNz6v7",
+        "PBX_DEFAULT_EXTENSION": "12310"
+      }
+    }
+  }
+}

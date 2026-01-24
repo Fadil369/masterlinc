@@ -1,0 +1,59 @@
+{
+  "spark": {
+    "version": "1.0",
+    "project": {
+      "name": "3CX MCP Server",
+      "description": "AI-powered telephony server with MasterLinc orchestration",
+      "repository": "https://github.com/fadil369/masterlinc"
+    },
+    "services": {
+      "mcp-server": {
+        "type": "node",
+        "version": "22",
+        "entrypoint": "packages/3cx-mcp/dist/index.js",
+        "build": "npm run build --workspace=@basma/3cx-mcp",
+        "env": {
+          "NODE_ENV": "production",
+          "PBX_FQDN": "${{ secrets.PBX_FQDN }}",
+          "PBX_USERNAME": "${{ secrets.PBX_USERNAME }}",
+          "PBX_PASSWORD": "${{ secrets.PBX_PASSWORD }}",
+          "ANTHROPIC_API_KEY": "${{ secrets.ANTHROPIC_API_KEY }}",
+          "OPENAI_API_KEY": "${{ secrets.OPENAI_API_KEY }}"
+        },
+        "ports": [3000],
+        "health": {
+          "check": "http://localhost:3000/health",
+          "interval": 30,
+          "timeout": 10
+        }
+      },
+      "web-dashboard": {
+        "type": "static",
+        "source": "packages/3cx-mcp/web",
+        "routes": [
+          {"path": "/", "file": "index.html"},
+          {"path": "/api/*", "proxy": "mcp-server:3000"}
+        ]
+      },
+      "monitoring": {
+        "prometheus": {
+          "enabled": true,
+          "port": 9090,
+          "scrape": ["mcp-server:3000/metrics"]
+        },
+        "grafana": {
+          "enabled": true,
+          "port": 3001,
+          "dashboards": ["packages/3cx-mcp/grafana-dashboard.json"]
+        }
+      }
+    },
+    "storage": {
+      "redis": {
+        "version": "7-alpine",
+        "persistence": true,
+        "volume": "redis-data"
+      }
+    }
+  }
+}

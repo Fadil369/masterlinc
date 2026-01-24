@@ -220,8 +220,7 @@ async function runTests() {
   console.log('\n✅ Debug tests complete\n');
 }
 
-if (require.main === module) {
-  runTests().catch(console.error);
-}
+// Auto-run tests
+runTests().catch(console.error);
 
 export { runTests };

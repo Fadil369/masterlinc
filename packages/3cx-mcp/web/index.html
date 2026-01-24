@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3CX MCP Server - Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+</head>
+<body class="bg-gray-50" x-data="dashboard">
+    <!-- Header -->
+    <nav class="bg-white shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <h1 class="text-2xl font-bold text-gray-900">3CX MCP Server</h1>
+                    <span class="ml-4 px-3 py-1 text-sm rounded-full" 
+                          :class="status === 'connected' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'">
+                        <span class="inline-block w-2 h-2 rounded-full mr-2" 
+                              :class="status === 'connected' ? 'bg-green-500' : 'bg-red-500'"></span>
+                        <span x-text="status"></span>
+                    </span>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button @click="refresh" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                        Refresh
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Stats Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white rounded-lg shadow p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-600">Active Calls</p>
+                        <p class="text-3xl font-bold text-gray-900" x-text="stats.activeCalls"></p>
+                    </div>
+                    <div class="p-3 bg-blue-100 rounded-full">
+                        <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-600">Available Agents</p>
+                        <p class="text-3xl font-bold text-gray-900" x-text="stats.availableAgents"></p>
+                    </div>
+                    <div class="p-3 bg-green-100 rounded-full">
+                        <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-600">Today's Calls</p>
+                        <p class="text-3xl font-bold text-gray-900" x-text="stats.totalCalls"></p>
+                    </div>
+                    <div class="p-3 bg-purple-100 rounded-full">
+                        <svg class="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-600">Avg Duration</p>
+                        <p class="text-3xl font-bold text-gray-900" x-text="stats.avgDuration + 's'"></p>
+                    </div>
+                    <div class="p-3 bg-yellow-100 rounded-full">
+                        <svg class="w-8 h-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Active Calls -->
+            <div class="bg-white rounded-lg shadow">
+                <div class="p-6 border-b">
+                    <h2 class="text-lg font-semibold text-gray-900">Active Calls</h2>
+                </div>
+                <div class="p-6">
+                    <template x-if="activeCalls.length === 0">
+                        <p class="text-gray-500 text-center py-8">No active calls</p>
+                    </template>
+                    <template x-if="activeCalls.length > 0">
+                        <div class="space-y-4">
+                            <template x-for="call in activeCalls" :key="call.id">
+                                <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                                    <div>
+                                        <p class="font-semibold" x-text="call.caller"></p>
+                                        <p class="text-sm text-gray-600" x-text="call.duration + 's'"></p>
+                                    </div>
+                                    <span class="px-3 py-1 text-xs rounded-full bg-green-100 text-green-800" x-text="call.status"></span>
+                                </div>
+                            </template>
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+            <!-- AI Agents -->
+            <div class="bg-white rounded-lg shadow">
+                <div class="p-6 border-b">
+                    <h2 class="text-lg font-semibold text-gray-900">MasterLinc Agents</h2>
+                </div>
+                <div class="p-6">
+                    <div class="space-y-4">
+                        <template x-for="agent in agents" :key="agent.id">
+                            <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                                <div>
+                                    <p class="font-semibold" x-text="agent.name"></p>
+                                    <p class="text-sm text-gray-600" x-text="agent.load + '/' + agent.capacity"></p>
+                                </div>
+                                <span class="px-3 py-1 text-xs rounded-full" 
+                                      :class="agent.status === 'idle' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'"
+                                      x-text="agent.status"></span>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="bg-white rounded-lg shadow lg:col-span-2">
+                <div class="p-6 border-b">
+                    <h2 class="text-lg font-semibold text-gray-900">Recent Activity</h2>
+                </div>
+                <div class="p-6">
+                    <div class="space-y-4">
+                        <template x-for="activity in recentActivity" :key="activity.id">
+                            <div class="flex items-start space-x-4">
+                                <div class="flex-shrink-0">
+                                    <div class="w-2 h-2 mt-2 rounded-full" 
+                                         :class="activity.type === 'call' ? 'bg-blue-500' : 'bg-green-500'"></div>
+                                </div>
+                                <div class="flex-1">
+                                    <p class="text-sm text-gray-900" x-text="activity.message"></p>
+                                    <p class="text-xs text-gray-500" x-text="activity.time"></p>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('alpine:init', () => {
+            Alpine.data('dashboard', () => ({
+                status: 'connected',
+                stats: {
+                    activeCalls: 0,
+                    availableAgents: 5,
+                    totalCalls: 0,
+                    avgDuration: 0
+                },
+                activeCalls: [],
+                agents: [
+                    { id: 1, name: 'Basma Voice', status: 'idle', load: 0, capacity: 10 },
+                    { id: 2, name: 'Chat Handler', status: 'idle', load: 0, capacity: 50 },
+                    { id: 3, name: 'Workflow Engine', status: 'idle', load: 0, capacity: 100 },
+                    { id: 4, name: 'Analytics', status: 'idle', load: 0, capacity: 1000 },
+                    { id: 5, name: 'Supervisor', status: 'idle', load: 0, capacity: 20 }
+                ],
+                recentActivity: [],
+
+                init() {
+                    this.fetchData();
+                    setInterval(() => this.fetchData(), 5000);
+                },
+
+                async fetchData() {
+                    try {
+                        const response = await fetch('/api/dashboard');
+                        if (response.ok) {
+                            const data = await response.json();
+                            this.stats = data.stats || this.stats;
+                            this.activeCalls = data.activeCalls || [];
+                            this.recentActivity = data.recentActivity || [];
+                            this.status = 'connected';
+                        } else {
+                            this.status = 'disconnected';
+                        }
+                    } catch (error) {
+                        console.error('Failed to fetch data:', error);
+                        this.status = 'disconnected';
+                    }
+                },
+
+                refresh() {
+                    this.fetchData();
+                }
+            }));
+        });
+    </script>
+</body>
+</html>
