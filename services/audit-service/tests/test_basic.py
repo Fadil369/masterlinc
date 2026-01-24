@@ -1,5 +1,5 @@
 """
-Basic test for audit-service service.
+Basic test for audit-service.
 """
 import pytest
 

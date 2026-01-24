@@ -1,5 +1,5 @@
 """
-Basic test for masterlinc-api service.
+Basic test for masterlinc-api.
 """
 import pytest
 

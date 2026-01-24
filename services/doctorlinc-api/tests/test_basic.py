@@ -1,5 +1,5 @@
 """
-Basic test for doctorlinc-api service.
+Basic test for doctorlinc-api.
 """
 import pytest
 

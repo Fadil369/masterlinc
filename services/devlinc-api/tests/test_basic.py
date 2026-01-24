@@ -1,5 +1,5 @@
 """
-Basic test for devlinc-api service.
+Basic test for devlinc-api.
 """
 import pytest
 

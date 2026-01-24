@@ -1,5 +1,5 @@
 """
-Basic test for policylinc-api service.
+Basic test for policylinc-api.
 """
 import pytest
 

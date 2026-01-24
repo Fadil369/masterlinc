@@ -1,5 +1,5 @@
 """
-Basic test for claimlinc-api service.
+Basic test for claimlinc-api.
 """
 import pytest
 

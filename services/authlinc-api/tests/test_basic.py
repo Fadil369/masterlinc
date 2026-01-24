@@ -1,5 +1,5 @@
 """
-Basic test for authlinc-api service.
+Basic test for authlinc-api.
 """
 import pytest
 
