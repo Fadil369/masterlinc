@@ -100,7 +100,12 @@ class PolicyInterpretationResponse(BaseModel):
     interpretation: str = Field(..., description="Policy interpretation")
     interpretation_ar: Optional[str] = Field(None, description="Policy interpretation in Arabic")
     applicable_rules: List[str] = Field(default_factory=list, description="Applicable policy rules")
-    confidence_score: float = Field(..., description="Interpretation confidence (0-1)")
+    confidence_score: float = Field(
+        ...,
+        ge=0,
+        le=1,
+        description="Interpretation confidence (0-1)",
+    )
     recommendations: List[str] = Field(default_factory=list, description="Recommendations")
 
 
