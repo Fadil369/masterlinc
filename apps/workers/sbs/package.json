@@ -9,7 +9,7 @@
   },
   "dependencies": {
     "hono": "^4.0.0",
-    "@brainsait/sbs-types": "workspace:*"
+    "@brainsait/sbs-types": "file:../../../../packages/sbs-types"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20231218.0",
