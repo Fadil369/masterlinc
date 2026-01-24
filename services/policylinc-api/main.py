@@ -2,7 +2,7 @@
 PolicyLinc API - Payer policy interpretation and eligibility verification agent.
 Provides eligibility verification, coverage checks, and policy rule interpretation.
 """
-from fastapi import FastAPI, HTTPException, status
+from fastapi import FastAPI, status
 from fastapi.middleware.cors import CORSMiddleware
 from datetime import datetime
 from pydantic import BaseModel, Field
