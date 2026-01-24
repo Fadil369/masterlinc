@@ -83,6 +83,8 @@ services:
       - DATABASE_URL=postgresql://masterlinc:changeme_in_production@postgres:5432/masterlinc
       - REDIS_URL=redis://redis:6379/0
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - NPHIES_API_KEY=${NPHIES_API_KEY:-}
       - JWT_SECRET=${JWT_SECRET:-your-secret-key}
       - CLAIMLINC_API_URL=http://claimlinc-api:8001
       - DOCTORLINC_API_URL=http://doctorlinc-api:8002
@@ -116,6 +118,8 @@ services:
       - REDIS_URL=redis://redis:6379/0
       - FHIR_SERVER_URL=http://fhir-server:8080/fhir
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - NPHIES_API_KEY=${NPHIES_API_KEY:-}
     ports:
       - "8001:8001"
     depends_on:
@@ -141,6 +145,7 @@ services:
     environment:
       - ENVIRONMENT=development
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
       - FHIR_SERVER_URL=http://fhir-server:8080/fhir
     ports:
       - "8002:8002"
@@ -163,6 +168,7 @@ services:
     environment:
       - ENVIRONMENT=development
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
     ports:
       - "8003:8003"
     healthcheck:
@@ -181,6 +187,7 @@ services:
     environment:
       - ENVIRONMENT=development
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
     ports:
       - "8004:8004"
     healthcheck:

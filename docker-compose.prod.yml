@@ -1,5 +1,3 @@
-version: "3.8"
-
 # MASTERLINC Production Docker Compose
 # Production-ready configuration with health checks, resource limits, and security
 
