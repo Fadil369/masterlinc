@@ -21,30 +21,30 @@ app.get('/health', (c) => {
   });
 });
 
-/**
- * Create a new claim (Dynamic persistence)
- */
+// Enhanced Claim Creation
 app.post('/api/claims/create', async (c) => {
   const body = await c.req.json<ClaimCreateRequest>();
   const claimId = `claim_${Date.now()}`;
   
-  // Calculate total amount
+  // Calculate total amount & Confidence
   const totalAmount = body.services.reduce((sum, s) => sum + (s.quantity * s.unitPrice), 0);
+  const normalizationConfidence = Math.random() * (1 - 0.85) + 0.85; // Simulated AI Score
 
   try {
-    // 1. Insert Claim Record
     await c.env.DB.prepare(`
-      INSERT INTO claims (claim_id, patient_oid, provider_oid, facility_oid, total_amount, status)
-      VALUES (?, ?, ?, ?, ?, 'draft')
+      INSERT INTO claims (claim_id, patient_oid, provider_oid, facility_oid, total_amount, status, diagnosis_code, normalization_confidence, scenario)
+      VALUES (?, ?, ?, ?, ?, 'draft', ?, ?, ?)
     `).bind(
       claimId, 
-      body.patient_oid, 
-      body.provider_oid, 
-      body.facility_oid, 
-      totalAmount
+      body.patientOID, 
+      body.providerOID, 
+      body.facilityOID, 
+      totalAmount,
+      body.diagnosisCode,
+      normalizationConfidence,
+      body.scenario || 'success'
     ).run();
 
-    // 2. Insert Services (Batch)
     const serviceStatements = body.services.map(s => {
       const totalPrice = s.quantity * s.unitPrice;
       return c.env.DB.prepare(`
@@ -59,7 +59,8 @@ app.post('/api/claims/create', async (c) => {
       success: true,
       claimId,
       totalAmount,
-      message: 'Claim created and persisted in D1'
+      normalizationConfidence,
+      message: 'Enhanced claim created'
     }, 201);
 
   } catch (error: any) {
@@ -67,50 +68,41 @@ app.post('/api/claims/create', async (c) => {
   }
 });
 
-/**
- * Get Claim Details
- */
-app.get('/api/claims/:claimId', async (c) => {
-  const claimId = c.req.param('claimId');
-  
-  try {
-    const claim = await c.env.DB.prepare('SELECT * FROM claims WHERE claim_id = ?')
-      .bind(claimId)
-      .first();
-
-    if (!claim) return c.json({ error: 'Claim not found' }, 404);
-
-    const services = await c.env.DB.prepare('SELECT * FROM claim_services WHERE claim_id = ?')
-      .bind(claimId)
-      .all();
-
-    return c.json({
-      ...claim,
-      services: services.results
-    });
-  } catch (error: any) {
-    return c.json({ error: error.message }, 500);
-  }
-});
-
-/**
- * Submit Claim to NPHIES (Simulated Dynamic Call)
- */
+// NPHIES Simulation with Scenarios
 app.post('/api/claims/:claimId/submit-nphies', async (c) => {
   const claimId = c.req.param('claimId');
   const nphiesId = `NPH-${Math.random().toString(36).substring(7).toUpperCase()}`;
 
   try {
+    const claim = await c.env.DB.prepare('SELECT * FROM claims WHERE claim_id = ?').bind(claimId).first<any>();
+    if (!claim) return c.json({ error: 'Claim not found' }, 404);
+
+    const scenario = claim.scenario || 'success';
+    let status = 'submitted';
+    let rejectionReason = null;
+
+    // Simulate Scenarios
+    if (scenario === 'nphies_rejected') {
+      status = 'rejected';
+      rejectionReason = 'Invalid diagnosis code for procedure';
+    } else if (scenario === 'validation_error') {
+      return c.json({ success: false, error: 'Validation Error: Missing provider signature' }, 400);
+    } else if (scenario === 'requires_preauth') {
+      status = 'under_review';
+    }
+
     await c.env.DB.prepare(`
       UPDATE claims 
-      SET status = 'submitted', nphies_id = ?, submitted_at = CURRENT_TIMESTAMP 
+      SET status = ?, nphies_id = ?, submitted_at = CURRENT_TIMESTAMP, rejection_reason = ?
       WHERE claim_id = ?
-    `).bind(nphiesId, claimId).run();
+    `).bind(status, nphiesId, rejectionReason, claimId).run();
 
     return c.json({
-      success: true,
+      success: status !== 'rejected',
       nphiesId,
-      message: 'Claim successfully submitted to simulated NPHIES gateway'
+      status,
+      rejectionReason,
+      message: `Claim processed with scenario: ${scenario}`
     });
   } catch (error: any) {
     return c.json({ error: error.message }, 500);

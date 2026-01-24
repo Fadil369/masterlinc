@@ -32,6 +32,16 @@ export interface SbsService {
   totalPrice: number;
   providerId: string;
   date: string; // ISO string
+  normalizationScore?: number;
+  bundleApplied?: string; // ID of the bundle if applicable
+}
+
+export interface BundleDefinition {
+  id: string;
+  name: string;
+  services: string[]; // List of service codes
+  price: number;
+  savings: number;
 }
 
 export interface SbsClaim {
@@ -39,11 +49,16 @@ export interface SbsClaim {
   patientOID: string;
   providerOID: string;
   facilityOID: string;
+  diagnosisCode: string; // ICD-10
+  diagnosisDisplay?: string;
   services: SbsService[];
   totalAmount: number;
   status: ClaimStatus;
   nphiesId?: string;
   rejectionReason?: string;
+  digitalSignature?: string;
+  normalizationConfidence?: number;
+  scenario?: 'success' | 'normalization_failed' | 'bundle_applied' | 'high_value_claim' | 'multi_service' | 'requires_preauth' | 'validation_error' | 'nphies_rejected';
   submittedAt?: string;
   reviewedAt?: string;
   paidAt?: string;
@@ -66,7 +81,9 @@ export interface ClaimCreateRequest {
   patientOID: string;
   providerOID: string;
   facilityOID: string;
-  services: Omit<SbsService, 'totalPrice'>[];
+  diagnosisCode: string;
+  scenario?: SbsClaim['scenario']; // For testing/simulation
+  services: Omit<SbsService, 'totalPrice' | 'date'>[];
 }
 
 export interface NphiesSubmissionResult {
