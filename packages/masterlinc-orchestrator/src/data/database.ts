@@ -73,9 +73,15 @@ export class DatabaseManager {
     try {
       // Test PostgreSQL connection
       const pgClient = await this.pgPool.connect();
-      await pgClient.query('SELECT NOW()');
+      try {
+        await pgClient.query('SELECT NOW()');
+        logger.info('PostgreSQL connected');
+      } catch (error: any) {
+        logger.warn({ error: error.message }, 'PostgreSQL connection failed - continuing without DB');
+        pgClient.release();
+        return; // Continue without database
+      }
       pgClient.release();
-      logger.info('PostgreSQL connected');
 
       // Initialize MongoDB
       await this.mongoClient.connect();

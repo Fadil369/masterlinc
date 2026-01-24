@@ -38,7 +38,7 @@ export class EventBus {
       await this.channel.assertExchange(this.exchangeName, 'topic', { durable: true });
 
       // Handle connection events
-      this.connection.on('error', (err) => {
+      this.connection.on('error', (err: Error) => {
         logger.error({ error: err.message }, 'RabbitMQ connection error');
       });
 
@@ -118,7 +118,7 @@ export class EventBus {
 
       await this.channel.consume(
         queue.queue,
-        (msg) => {
+        (msg: amqp.ConsumeMessage | null) => {
           if (msg) {
             try {
               const event: Event = JSON.parse(msg.content.toString());
