@@ -4,7 +4,7 @@
 fastapi==0.128.0
 uvicorn[standard]==0.34.0
 pydantic==2.10.6
-pydantic-settings==2.7.2
+pydantic-settings==2.7.1
 
 # AI/LLM
 langchain==0.2.5
