@@ -4,6 +4,9 @@ import { TokenManager } from './auth/token-manager.js';
 import { CallControlClient } from './clients/call-control.js';
 import { XApiClient } from './clients/xapi.js';
 import { PBXWebSocket } from './clients/websocket.js';
+import { MasterLincCoordinator } from './orchestration/masterlinc-coordinator.js';
+import { BasmaEnhanced } from './orchestration/basma-enhanced.js';
+import { AutomationEngine } from './workflows/automation-engine.js';
 
 import { makeCallTool, handleMakeCall } from './tools/make-call.js';
 import { answerCallTool, handleAnswerCall } from './tools/answer-call.js';
@@ -33,6 +36,17 @@ export function createServer(config: Config): McpServer {
   const callControl = new CallControlClient(config.PBX_FQDN, tokenManager);
   const xapi = new XApiClient(config.PBX_FQDN, tokenManager);
   const wsClient = new PBXWebSocket(config.PBX_FQDN, tokenManager, config.PBX_DEFAULT_EXTENSION);
+  
+  // Initialize orchestration layer
+  const masterlinc = new MasterLincCoordinator(config, callControl, xapi);
+  const basma = new BasmaEnhanced(config);
+  const automation = new AutomationEngine(config, masterlinc, basma, callControl, xapi);
+  
+  console.log('[3CX MCP] Orchestration initialized:', {
+    agents: masterlinc.getAllAgents().length,
+    workflows: masterlinc.getAllWorkflows().length,
+    pipelines: automation.getAllPipelines().length,
+  });
 
   const server = new McpServer({
     name: '3cx-mcp',

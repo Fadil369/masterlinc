@@ -1,0 +1,83 @@
+version: '3.8'
+
+services:
+  3cx-mcp:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: brainsait/3cx-mcp:latest
+    container_name: 3cx-mcp-server
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - PBX_FQDN=${PBX_FQDN:-1593.3cx.cloud}
+      - PBX_USERNAME=${PBX_USERNAME}
+      - PBX_PASSWORD=${PBX_PASSWORD}
+      - PBX_DEFAULT_EXTENSION=${PBX_DEFAULT_EXTENSION:-12310}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - MASTERLINC_BASE_URL=${MASTERLINC_BASE_URL:-https://brainsait-linc.workers.dev}
+    volumes:
+      - ./logs:/app/logs
+      - ./recordings:/app/recordings
+    networks:
+      - brainsait-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    labels:
+      - "com.brainsait.service=3cx-mcp"
+      - "com.brainsait.version=1.0.0"
+
+  # Redis for caching (optional)
+  redis:
+    image: redis:7-alpine
+    container_name: 3cx-redis
+    restart: unless-stopped
+    volumes:
+      - redis-data:/data
+    networks:
+      - brainsait-network
+    command: redis-server --appendonly yes
+
+  # Monitoring with Prometheus (optional)
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: 3cx-prometheus
+    restart: unless-stopped
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    ports:
+      - "9090:9090"
+    networks:
+      - brainsait-network
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+
+  # Grafana for dashboards (optional)
+  grafana:
+    image: grafana/grafana:latest
+    container_name: 3cx-grafana
+    restart: unless-stopped
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
+    volumes:
+      - grafana-data:/var/lib/grafana
+    ports:
+      - "3001:3000"
+    networks:
+      - brainsait-network
+    depends_on:
+      - prometheus
+
+networks:
+  brainsait-network:
+    driver: bridge
+
+volumes:
+  redis-data:
+  prometheus-data:
+  grafana-data:
