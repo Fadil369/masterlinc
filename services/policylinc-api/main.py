@@ -39,8 +39,20 @@ class HealthResponse(BaseModel):
 
 class EligibilityCheckRequest(BaseModel):
     """Eligibility check request."""
-    patient_id: str = Field(..., description="Patient identifier")
-    payer_id: str = Field(..., description="Payer/insurance identifier")
+    patient_id: str = Field(
+        ...,
+        min_length=1,
+        max_length=50,
+        pattern="^[A-Z0-9-]+$",
+        description="Patient identifier",
+    )
+    payer_id: str = Field(
+        ...,
+        min_length=1,
+        max_length=50,
+        pattern="^[A-Z0-9-]+$",
+        description="Payer/insurance identifier",
+    )
     service_date: Optional[str] = Field(None, description="Date of service (YYYY-MM-DD)")
     service_type: Optional[str] = Field(None, description="Type of service")
 
