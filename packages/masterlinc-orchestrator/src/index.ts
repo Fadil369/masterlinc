@@ -14,6 +14,9 @@ import { OIDIntegration } from './services/oid-integration.js';
 import { SBSIntegration } from './services/sbs-integration.js';
 import { DatabaseManager } from './data/database.js';
 import { WorkflowEngine } from './workflows/workflow-engine.js';
+import { RealtimeServer } from './features/websocket-server.js';
+import { EventBus } from './features/event-bus.js';
+import { AnalyticsEngine } from './features/analytics.js';
 
 const logger = pino({ 
   name: 'masterlinc-orchestrator',
@@ -30,6 +33,9 @@ class MasterLincOrchestrator {
   private oid: OIDIntegration;
   private sbs: SBSIntegration;
   private workflow: WorkflowEngine;
+  private websocket: RealtimeServer | null = null;
+  private eventBus: EventBus;
+  private analytics: AnalyticsEngine;
 
   constructor() {
     this.app = express();
@@ -46,6 +52,8 @@ class MasterLincOrchestrator {
       this.sbs,
       this.db,
     );
+    this.eventBus = new EventBus(process.env.RABBITMQ_URL || 'amqp://localhost');
+    this.analytics = new AnalyticsEngine(this.db);
   }
 
   /**
@@ -58,6 +66,10 @@ class MasterLincOrchestrator {
       // Initialize database
       await this.db.initialize();
       logger.info('Database initialized');
+
+      // Initialize event bus
+      await this.eventBus.initialize();
+      logger.info('Event bus initialized');
 
       // Check all services health
       await this.registry.checkAllServicesHealth();
@@ -268,8 +280,33 @@ class MasterLincOrchestrator {
         const stats = {
           services: this.registry.getStatistics(),
           workflows: await this.workflow.getStatistics(),
+          websocket: {
+            connectedClients: this.websocket?.getConnectedClientsCount() || 0,
+          },
         };
         res.json(stats);
+      } catch (error: any) {
+        res.status(500).json({ error: error.message });
+      }
+    });
+
+    // Analytics endpoints
+    this.app.get('/api/analytics/report', async (req: Request, res: Response) => {
+      try {
+        const startDate = req.query.startDate ? new Date(req.query.startDate as string) : new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+        const endDate = req.query.endDate ? new Date(req.query.endDate as string) : new Date();
+        
+        const report = await this.analytics.generateReport(startDate, endDate);
+        res.json(report);
+      } catch (error: any) {
+        res.status(500).json({ error: error.message });
+      }
+    });
+
+    this.app.get('/api/analytics/dashboard', async (req: Request, res: Response) => {
+      try {
+        const metrics = await this.analytics.getDashboardMetrics();
+        res.json(metrics);
       } catch (error: any) {
         res.status(500).json({ error: error.message });
       }
@@ -287,11 +324,16 @@ class MasterLincOrchestrator {
   async start(): Promise<void> {
     const port = parseInt(this.config.PORT);
 
-    this.app.listen(port, '0.0.0.0', () => {
+    const server = this.app.listen(port, '0.0.0.0', () => {
       logger.info({ port }, 'MasterLinc Orchestrator running');
       logger.info(`Health: http://localhost:${port}/health`);
       logger.info(`API: http://localhost:${port}/api/*`);
+      logger.info(`WebSocket: ws://localhost:${port}/ws`);
     });
+
+    // Initialize WebSocket server
+    this.websocket = new RealtimeServer(server);
+    logger.info('WebSocket server initialized');
   }
 
   /**
