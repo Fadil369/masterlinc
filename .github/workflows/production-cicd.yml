@@ -80,7 +80,8 @@ jobs:
         run: |
           cd services/${{ matrix.service }}
           pip install -r requirements.txt
-          pip install pytest pytest-cov pytest-asyncio httpx
+          # pytest, pytest-cov, pytest-asyncio are now in requirements.txt
+          pip install httpx  # Additional testing dependency
 
       - name: Run linting
         run: |

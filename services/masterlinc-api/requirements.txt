@@ -38,3 +38,8 @@ fhir.resources==7.1.0
 python-dotenv==1.0.1
 structlog==24.1.0
 tenacity==8.2.3
+
+# Testing
+pytest==8.0.0
+pytest-asyncio==0.23.5
+pytest-cov==4.1.0
