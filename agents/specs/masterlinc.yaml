@@ -1,0 +1,146 @@
+# MasterLinc Agent Specification
+# Central orchestration agent for BrainSAIT LINC ecosystem
+
+agent_id: masterlinc
+name: MasterLinc
+name_ar: ماستر لينك
+version: "1.0.0"
+category: orchestration
+status: active
+
+description: |
+  Central orchestration agent for the BrainSAIT LINC ecosystem.
+  Coordinates task delegation, workflow execution, and inter-agent messaging.
+  
+description_ar: |
+  وكيل التنسيق المركزي لنظام BrainSAIT LINC.
+  ينسق تفويض المهام، وتنفيذ سير العمل، والرسائل بين الوكلاء.
+
+capabilities:
+  - orchestration   # Multi-agent orchestration
+  - routing         # Intelligent task routing
+  - workflows       # Workflow execution
+  - monitoring      # Agent health monitoring
+
+endpoints:
+  base_url: http://masterlinc-api:8000
+  health: /health
+  api_prefix: /api/v1
+
+api_endpoints:
+  - name: list_agents
+    path: /api/v1/agents
+    method: GET
+    description: List all registered agents
+    output_schema:
+      type: array
+      items:
+        type: object
+        properties:
+          agent_id: { type: string }
+          name: { type: string }
+          status: { type: string }
+          capabilities: { type: array }
+
+  - name: delegate
+    path: /api/v1/delegate
+    method: POST
+    description: Delegate a task to specialized agent
+    input_schema:
+      type: object
+      required: [task_description]
+      properties:
+        task_description: { type: string }
+        task_description_ar: { type: string }
+        context: { type: object }
+        preferred_agent: { type: string }
+        priority: { type: integer, minimum: 1, maximum: 10 }
+        timeout: { type: integer, default: 300 }
+    output_schema:
+      type: object
+      properties:
+        task_id: { type: string }
+        assigned_agent: { type: string }
+        status: { type: string }
+        message: { type: string }
+        message_ar: { type: string }
+
+  - name: execute_workflow
+    path: /api/v1/workflow/execute
+    method: POST
+    description: Execute multi-agent workflow
+    input_schema:
+      type: object
+      required: [workflow_name, steps]
+      properties:
+        workflow_name: { type: string }
+        workflow_description: { type: string }
+        steps:
+          type: array
+          items:
+            type: object
+            required: [step_id, agent_id, action]
+            properties:
+              step_id: { type: string }
+              agent_id: { type: string }
+              action: { type: string }
+              input_data: { type: object }
+              depends_on: { type: array }
+        execution_mode:
+          type: string
+          enum: [sequential, parallel, mixed]
+
+  - name: route_message
+    path: /api/v1/message/route
+    method: POST
+    description: Route message between agents
+    input_schema:
+      type: object
+      required: [sender_id, receiver_id, message_type, content]
+      properties:
+        sender_id: { type: string }
+        receiver_id: { type: string }
+        message_type: { type: string }
+        content: { type: object }
+        priority: { type: integer }
+
+registered_agents:
+  - agent_id: claimlinc
+    endpoint: http://claimlinc-api:8001
+    capabilities: [validation, analysis, patterns]
+    
+  - agent_id: policylinc
+    endpoint: http://policylinc-api:8003
+    capabilities: [policy_interpretation, eligibility, coverage]
+    
+  - agent_id: doctorlinc
+    endpoint: http://doctorlinc-api:8002
+    capabilities: [clinical_support, diagnosis, treatment]
+    
+  - agent_id: authlinc
+    endpoint: http://authlinc-api:8005
+    capabilities: [authentication, authorization]
+    
+  - agent_id: devlinc
+    endpoint: http://devlinc-api:8004
+    capabilities: [code_generation, api_integration]
+
+integration:
+  redis:
+    enabled: true
+    purpose: [caching, pub_sub, task_queue]
+    
+  database:
+    enabled: true
+    type: postgresql
+    
+  monitoring:
+    enabled: true
+    metrics: prometheus
+    dashboards: grafana
+
+security:
+  authentication: jwt
+  authorization: rbac
+  api_rate_limiting: enabled
+  cors: configured
