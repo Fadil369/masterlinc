@@ -34,17 +34,48 @@ export class ServiceRegistry {
    * Initialize all known services
    */
   private initializeServices() {
-    const services: ServiceEndpoint[] = [
       {
-        id: 'masterlinc',
-        name: 'MasterLinc Orchestrator',
+        id: 'masterlinc-healthcare',
+        name: 'MasterLinc Healthcare',
         url: 'https://masterlinc-agent-pla--Fadil369.github.app',
         healthEndpoint: '/health',
         status: 'unknown',
         lastCheck: new Date(),
         metadata: {
-          version: '2.0.0',
-          capabilities: ['orchestration', 'routing', 'coordination'],
+          capabilities: ['healthcare', 'triage', 'booking'],
+        },
+      },
+      {
+        id: 'masterlinc-business',
+        name: 'MasterLinc Business',
+        url: 'https://masterlinc-business--Fadil369.github.app',
+        healthEndpoint: '/health',
+        status: 'unknown',
+        lastCheck: new Date(),
+        metadata: {
+          capabilities: ['business', 'strategy', 'finance', 'marketing'],
+        },
+      },
+      {
+        id: 'masterlinc-tech',
+        name: 'MasterLinc Tech',
+        url: 'https://masterlinc-tech--Fadil369.github.app',
+        healthEndpoint: '/health',
+        status: 'unknown',
+        lastCheck: new Date(),
+        metadata: {
+          capabilities: ['tech', 'development', 'devops', 'ai-ml'],
+        },
+      },
+      {
+        id: 'masterlinc-personal',
+        name: 'MasterLinc Personal',
+        url: 'https://masterlinc-personal--Fadil369.github.app',
+        healthEndpoint: '/health',
+        status: 'unknown',
+        lastCheck: new Date(),
+        metadata: {
+          capabilities: ['personal', 'growth', 'wellbeing', 'productivity'],
         },
       },
       {

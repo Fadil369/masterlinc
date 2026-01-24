@@ -14,6 +14,7 @@ import { OIDIntegration } from './services/oid-integration.js';
 import { SBSIntegration } from './services/sbs-integration.js';
 import { DatabaseManager } from './data/database.js';
 import { WorkflowEngine } from './workflows/workflow-engine.js';
+import { NlpService } from './services/nlp-service.js';
 import { RealtimeServer } from './features/websocket-server.js';
 import { EventBus } from './features/event-bus.js';
 import { AnalyticsEngine } from './features/analytics.js';
@@ -32,6 +33,7 @@ class MasterLincOrchestrator {
   private healthcare: HealthcareIntegration;
   private oid: OIDIntegration;
   private sbs: SBSIntegration;
+  private nlp: NlpService;
   private workflow: WorkflowEngine;
   private websocket: RealtimeServer | null = null;
   private eventBus: EventBus;
@@ -45,12 +47,14 @@ class MasterLincOrchestrator {
     this.healthcare = new HealthcareIntegration(this.registry);
     this.oid = new OIDIntegration(this.registry);
     this.sbs = new SBSIntegration(this.registry);
+    this.nlp = new NlpService(this.config.ANTHROPIC_API_KEY || '');
     this.workflow = new WorkflowEngine(
       this.basma,
       this.healthcare,
       this.oid,
       this.sbs,
       this.db,
+      this.nlp,
     );
     this.eventBus = new EventBus(process.env.RABBITMQ_URL || 'amqp://localhost');
     this.analytics = new AnalyticsEngine(this.db);
@@ -153,8 +157,8 @@ class MasterLincOrchestrator {
     // Workflow endpoints
     this.app.post('/api/workflows/start-from-call', async (req: Request, res: Response) => {
       try {
-        const { callId, from } = req.body;
-        const workflow = await this.workflow.startWorkflowFromCall(callId, from);
+        const { callId, from, domain } = req.body;
+        const workflow = await this.workflow.startWorkflowFromCall(callId, from, domain);
         res.json(workflow);
       } catch (error: any) {
         logger.error({ error: error.message }, 'Failed to start workflow');

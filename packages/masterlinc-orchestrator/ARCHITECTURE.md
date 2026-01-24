@@ -2,7 +2,7 @@
 
 ## System Overview
 
-MasterLinc acts as the central orchestrator coordinating multiple subsystems in the BrainSAIT healthcare ecosystem to provide end-to-end workflow automation from call routing to NPHIES claims submission.
+MasterLinc acts as the central intelligent orchestrator coordinating multiple subsystems across Healthcare, Business, Tech, and Personal domains. It leverages Advanced NLP (Claude) for intent extraction and cross-domain routing, providing end-to-end workflow automation from call routing to service delivery and claims.
 
 ---
 

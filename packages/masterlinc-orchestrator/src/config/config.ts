@@ -35,6 +35,9 @@ const configSchema = z.object({
   OID_URL: z.string().default('https://brainsait-oid-integr--fadil369.github.app'),
   SBS_URL: z.string().default('https://sbs--fadil369.github.app'),
   
+  // AI & NLP
+  ANTHROPIC_API_KEY: z.string().optional(),
+  
   // Monitoring
   HEALTH_CHECK_INTERVAL: z.string().default('30000'),
   LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
