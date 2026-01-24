@@ -1,0 +1,84 @@
+# Cloud Agent Delegation Configuration
+# This file configures how tasks are delegated to cloud-based agents
+
+version: "1.0"
+
+cloud_agents:
+  # Primary cloud orchestration agent
+  primary:
+    name: "Cloud Orchestrator"
+    endpoint: "${CLOUD_ORCHESTRATOR_URL:-http://masterlinc-api:8000}"
+    type: "orchestration"
+    enabled: true
+    capabilities:
+      - task_delegation
+      - workflow_management
+      - resource_allocation
+      - service_coordination
+    
+  # CI/CD automation agent
+  cicd:
+    name: "CI/CD Agent"
+    endpoint: "${CICD_AGENT_URL:-http://devlinc-api:8004}"
+    type: "automation"
+    enabled: true
+    capabilities:
+      - build_automation
+      - test_execution
+      - deployment_management
+      - code_quality_checks
+    
+  # Health monitoring agent
+  monitoring:
+    name: "Health Monitor"
+    endpoint: "${MONITORING_AGENT_URL:-http://prometheus:9090}"
+    type: "monitoring"
+    enabled: true
+    capabilities:
+      - service_health_checks
+      - performance_metrics
+      - alerting
+      - log_aggregation
+
+# Delegation rules
+delegation_rules:
+  # When to delegate tasks to cloud agents
+  triggers:
+    - type: "commit"
+      action: "trigger_cicd"
+      agent: "cicd"
+      
+    - type: "service_start"
+      action: "register_health_check"
+      agent: "monitoring"
+      
+    - type: "workflow_request"
+      action: "coordinate_services"
+      agent: "primary"
+  
+  # Priority levels for task delegation
+  priorities:
+    critical: 0
+    high: 1
+    medium: 2
+    low: 3
+
+# Retry configuration
+retry_policy:
+  max_attempts: 3
+  backoff_multiplier: 2
+  initial_delay_seconds: 1
+  max_delay_seconds: 60
+
+# Timeout configuration
+timeouts:
+  health_check_seconds: 10
+  task_execution_seconds: 300
+  service_startup_seconds: 120
+
+# Logging configuration
+logging:
+  level: "info"
+  format: "json"
+  include_timestamps: true
+  include_trace_ids: true

@@ -178,10 +178,27 @@ pnpm dev
 
 ## 📖 Documentation
 
+- [Cloud Agent Delegation Guide](docs/CLOUD_AGENT_DELEGATION.md) - How to delegate tasks to cloud agents
 - [Deployment Guide](docs/deployment/DEPLOYMENT_GUIDE.md)
 - [Security Policy](docs/security/SECURITY.md)
 - [Security Advisory](docs/security/SECURITY_ADVISORY.md)
 - [Product Requirements](docs/PRD.md)
+
+## 🤖 Cloud Agent Delegation
+
+MasterLinc supports delegating tasks to cloud-based agents for automated processing:
+
+```bash
+# Check agent health
+./scripts/delegate-to-cloud-agent.sh health
+
+# Delegate tasks
+./scripts/delegate-to-cloud-agent.sh build
+./scripts/delegate-to-cloud-agent.sh test
+./scripts/delegate-to-cloud-agent.sh deploy
+```
+
+See the [Cloud Agent Delegation Guide](docs/CLOUD_AGENT_DELEGATION.md) for details.
 
 ## 🤝 Contributing
 

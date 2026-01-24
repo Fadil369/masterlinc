@@ -1,0 +1,9 @@
+# Integration Test Requirements
+# These are requirements for running integration tests in tests/integration/
+
+pytest==8.0.0
+pytest-cov==4.1.0
+pytest-asyncio==0.21.1
+pytest-mock==3.12.0
+httpx==0.26.0
+requests==2.31.0
