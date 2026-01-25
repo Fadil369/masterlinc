@@ -34,6 +34,7 @@ export class ServiceRegistry {
    * Initialize all known services
    */
   private initializeServices() {
+    const services: ServiceEndpoint[] = [
       {
         id: 'masterlinc-healthcare',
         name: 'MasterLinc Healthcare',

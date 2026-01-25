@@ -3,7 +3,7 @@
  * Handles pub/sub messaging between services
  */
 
-import amqp, { type Connection, type Channel } from 'amqplib';
+import amqp from 'amqplib';
 import { pino } from 'pino';
 
 const logger = pino({ name: 'event-bus' });
@@ -17,8 +17,8 @@ export interface Event {
 }
 
 export class EventBus {
-  private connection: Connection | null = null;
-  private channel: Channel | null = null;
+  private connection: amqp.ChannelModel | null = null;
+  private channel: amqp.Channel | null = null;
   private exchangeName = 'masterlinc.events';
   private subscribers: Map<string, Array<(event: Event) => void>> = new Map();
 
@@ -35,17 +35,21 @@ export class EventBus {
       this.channel = await this.connection.createChannel();
 
       // Create exchange
-      await this.channel.assertExchange(this.exchangeName, 'topic', { durable: true });
+      if (this.channel) {
+        await this.channel.assertExchange(this.exchangeName, 'topic', { durable: true });
+      }
 
       // Handle connection events
-      this.connection.on('error', (err: Error) => {
-        logger.error({ error: err.message }, 'RabbitMQ connection error');
-      });
+      if (this.connection) {
+        this.connection.on('error', (err: Error) => {
+          logger.error({ error: err.message }, 'RabbitMQ connection error');
+        });
 
-      this.connection.on('close', () => {
-        logger.warn('RabbitMQ connection closed');
-        this.reconnect();
-      });
+        this.connection.on('close', () => {
+          logger.warn('RabbitMQ connection closed');
+          this.reconnect();
+        });
+      }
 
       logger.info('EventBus initialized');
     } catch (error: any) {
@@ -198,8 +202,12 @@ export class EventBus {
    * Close connection
    */
   async close(): Promise<void> {
-    if (this.channel) await this.channel.close();
-    if (this.connection) await this.connection.close();
+    try {
+      if (this.channel) await this.channel.close();
+      if (this.connection) await (this.connection as any).close();
+    } catch (error: any) {
+      logger.warn({ error: error.message }, 'Error closing EventBus connections');
+    }
     logger.info('EventBus closed');
   }
 }

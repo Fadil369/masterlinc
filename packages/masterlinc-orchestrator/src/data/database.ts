@@ -4,7 +4,7 @@
  */
 
 import { Pool, type PoolClient } from 'pg';
-import Redis from 'ioredis';
+import { Redis } from 'ioredis';
 import { MongoClient, type Db } from 'mongodb';
 import { pino } from 'pino';
 
@@ -35,7 +35,7 @@ export class DatabaseManager {
       port: parseInt(process.env.REDIS_PORT || '6379'),
       password: process.env.REDIS_PASSWORD,
       db: 0,
-      retryStrategy: (times) => Math.min(times * 50, 2000),
+      retryStrategy: (times: number) => Math.min(times * 50, 2000),
     });
 
     // MongoDB configuration
@@ -55,7 +55,7 @@ export class DatabaseManager {
       logger.error({ error: err.message }, 'PostgreSQL pool error');
     });
 
-    this.redis.on('error', (err) => {
+    this.redis.on('error', (err: Error) => {
       logger.error({ error: err.message }, 'Redis error');
     });
 
