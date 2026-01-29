@@ -60,3 +60,4 @@ Public/
 *.rtf
 .CFUserTextEncoding
 .wrangler/
+.turbo/
