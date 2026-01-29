@@ -104,20 +104,53 @@ class MasterLincOrchestrator {
     this.app.use(express.json());
     this.app.use(express.urlencoded({ extended: true }));
 
-    // CORS
+    // CORS - Production-aware
+    const allowedOrigins = (process.env.CORS_ORIGINS || '*').split(',');
     this.app.use((req, res, next) => {
-      res.header('Access-Control-Allow-Origin', '*');
-      res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-      res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+      const origin = req.headers.origin || '';
+      if (allowedOrigins.includes('*') || allowedOrigins.includes(origin)) {
+        res.header('Access-Control-Allow-Origin', origin || '*');
+      }
+      res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+      res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-API-Key, X-Request-ID');
+      res.header('Access-Control-Allow-Credentials', 'true');
       if (req.method === 'OPTIONS') {
         return res.sendStatus(200);
       }
       next();
     });
 
-    // Request logging
+    // Security headers
     this.app.use((req, res, next) => {
-      logger.info({ method: req.method, path: req.path }, 'Incoming request');
+      res.header('X-Content-Type-Options', 'nosniff');
+      res.header('X-Frame-Options', 'DENY');
+      res.header('X-XSS-Protection', '1; mode=block');
+      next();
+    });
+
+    // Request logging with request ID
+    this.app.use((req, res, next) => {
+      const requestId = req.headers['x-request-id'] || `req_${Date.now()}`;
+      res.setHeader('X-Request-ID', requestId);
+      logger.info({ method: req.method, path: req.path, requestId }, 'Incoming request');
+      next();
+    });
+
+    // Rate limiting (simple in-memory)
+    const requestCounts = new Map<string, { count: number; resetAt: number }>();
+    this.app.use((req, res, next) => {
+      const ip = req.ip || req.socket.remoteAddress || 'unknown';
+      const now = Date.now();
+      const limit = requestCounts.get(ip);
+      
+      if (!limit || limit.resetAt < now) {
+        requestCounts.set(ip, { count: 1, resetAt: now + 60000 });
+      } else {
+        limit.count++;
+        if (limit.count > 100) { // 100 requests per minute
+          return res.status(429).json({ error: 'Too many requests' });
+        }
+      }
       next();
     });
   }
