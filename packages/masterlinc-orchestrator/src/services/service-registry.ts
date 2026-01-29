@@ -115,7 +115,7 @@ export class ServiceRegistry {
       {
         id: 'sbs-claims',
         name: 'SBS Claims Management',
-        url: 'https://brainsait-sbs-dynamic.brainsait-fadil.workers.dev',
+        url: process.env.SBS_URL || 'https://brainsait-sbs-dynamic.brainsait-fadil.workers.dev',
         healthEndpoint: '/health',
         status: 'unknown',
         lastCheck: new Date(),

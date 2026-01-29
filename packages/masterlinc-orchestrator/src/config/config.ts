@@ -48,10 +48,10 @@ export type Config = z.infer<typeof configSchema>;
 export function loadConfig(): Config {
   try {
     return configSchema.parse(process.env);
-  } catch (error) {
+  } catch (error: unknown) {
     if (error instanceof z.ZodError) {
       console.error('Configuration validation failed:');
-      error.errors.forEach((err) => {
+      error.errors.forEach((err: z.ZodIssue) => {
         console.error(`  ${err.path.join('.')}: ${err.message}`);
       });
     }

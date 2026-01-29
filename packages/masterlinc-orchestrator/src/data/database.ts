@@ -51,7 +51,7 @@ export class DatabaseManager {
   }
 
   private setupEventHandlers() {
-    this.pgPool.on('error', (err) => {
+    this.pgPool.on('error', (err: Error) => {
       logger.error({ error: err.message }, 'PostgreSQL pool error');
     });
 
@@ -142,6 +142,10 @@ export class DatabaseManager {
         patient_oid VARCHAR(255) NOT NULL,
         provider_oid VARCHAR(255) NOT NULL,
         facility_oid VARCHAR(255) NOT NULL,
+        diagnosis_code VARCHAR(50),
+        normalization_confidence DECIMAL(4, 3),
+        scenario VARCHAR(50),
+        rejection_reason TEXT,
         total_amount DECIMAL(10, 2) NOT NULL,
         status VARCHAR(50) NOT NULL,
         nphies_id VARCHAR(255),
@@ -151,6 +155,26 @@ export class DatabaseManager {
         created_at TIMESTAMP DEFAULT NOW(),
         updated_at TIMESTAMP DEFAULT NOW()
       )`,
+
+      // Claims services table
+      `CREATE TABLE IF NOT EXISTS claim_services (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        claim_id VARCHAR(255) NOT NULL REFERENCES claims(claim_id) ON DELETE CASCADE,
+        code VARCHAR(50) NOT NULL,
+        description TEXT,
+        quantity INTEGER NOT NULL,
+        unit_price DECIMAL(10, 2) NOT NULL,
+        total_price DECIMAL(10, 2) NOT NULL,
+        provider_id VARCHAR(255),
+        service_date TIMESTAMP DEFAULT NOW()
+      )`,
+
+      // Backward-compatible migrations
+      `ALTER TABLE claims ADD COLUMN IF NOT EXISTS diagnosis_code VARCHAR(50)`,
+      `ALTER TABLE claims ADD COLUMN IF NOT EXISTS normalization_confidence DECIMAL(4, 3)`,
+      `ALTER TABLE claims ADD COLUMN IF NOT EXISTS scenario VARCHAR(50)`,
+      `ALTER TABLE claims ADD COLUMN IF NOT EXISTS rejection_reason TEXT`,
+
 
       // Call logs table
       `CREATE TABLE IF NOT EXISTS call_logs (
@@ -198,6 +222,8 @@ export class DatabaseManager {
       `CREATE INDEX IF NOT EXISTS idx_appointments_datetime ON appointments(datetime)`,
       `CREATE INDEX IF NOT EXISTS idx_claims_patient_oid ON claims(patient_oid)`,
       `CREATE INDEX IF NOT EXISTS idx_claims_nphies ON claims(nphies_id)`,
+      `CREATE INDEX IF NOT EXISTS idx_claim_services_claim ON claim_services(claim_id)`,
+
       `CREATE INDEX IF NOT EXISTS idx_call_logs_patient ON call_logs(patient_id)`,
       `CREATE INDEX IF NOT EXISTS idx_workflow_states_patient ON workflow_states(patient_id)`,
       `CREATE INDEX IF NOT EXISTS idx_audit_logs_entity ON audit_logs(entity_type, entity_id)`,

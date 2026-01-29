@@ -1,9 +1,12 @@
 /**
- * Event Bus with RabbitMQ
- * Handles pub/sub messaging between services
+ * Event Bus (Redis Streams)
+ * Handles pub/sub messaging between services.
+ *
+ * Note: This implementation always notifies in-process subscribers.
+ * It also persists events to a Redis Stream for observability/replay.
  */
 
-import amqp from 'amqplib';
+import { Redis } from 'ioredis';
 import { pino } from 'pino';
 
 const logger = pino({ name: 'event-bus' });
@@ -11,141 +14,77 @@ const logger = pino({ name: 'event-bus' });
 export interface Event {
   type: string;
   source: string;
-  data: any;
+  data: unknown;
   timestamp: Date;
   correlationId?: string;
 }
 
 export class EventBus {
-  private connection: amqp.ChannelModel | null = null;
-  private channel: amqp.Channel | null = null;
-  private exchangeName = 'masterlinc.events';
+  private redis: Redis | null = null;
+  private streamName = 'masterlinc:events';
   private subscribers: Map<string, Array<(event: Event) => void>> = new Map();
 
-  constructor(private rabbitUrl: string = 'amqp://localhost') {}
+  constructor(
+    private redisOptions: {
+      host?: string;
+      port?: number;
+      password?: string;
+    } = {},
+  ) {}
 
-  /**
-   * Initialize connection to RabbitMQ
-   */
   async initialize(): Promise<void> {
     try {
-      logger.info({ url: this.rabbitUrl }, 'Connecting to RabbitMQ');
-      
-      this.connection = await amqp.connect(this.rabbitUrl);
-      this.channel = await this.connection.createChannel();
-
-      // Create exchange
-      if (this.channel) {
-        await this.channel.assertExchange(this.exchangeName, 'topic', { durable: true });
-      }
-
-      // Handle connection events
-      if (this.connection) {
-        this.connection.on('error', (err: Error) => {
-          logger.error({ error: err.message }, 'RabbitMQ connection error');
-        });
-
-        this.connection.on('close', () => {
-          logger.warn('RabbitMQ connection closed');
-          this.reconnect();
-        });
-      }
-
-      logger.info('EventBus initialized');
-    } catch (error: any) {
-      logger.error({ error: error.message }, 'Failed to initialize EventBus');
-      // Continue without RabbitMQ (graceful degradation)
-    }
-  }
-
-  private async reconnect(): Promise<void> {
-    setTimeout(async () => {
-      try {
-        await this.initialize();
-      } catch (error: any) {
-        logger.error({ error: error.message }, 'Reconnection failed');
-      }
-    }, 5000);
-  }
-
-  /**
-   * Publish event
-   */
-  async publish(event: Event): Promise<void> {
-    if (!this.channel) {
-      logger.warn('EventBus not initialized, event not published');
-      // Notify local subscribers anyway
-      this.notifyLocalSubscribers(event);
-      return;
-    }
-
-    try {
-      const routingKey = event.type.replace('.', '_');
-      const message = Buffer.from(JSON.stringify(event));
-
-      this.channel.publish(this.exchangeName, routingKey, message, {
-        persistent: true,
-        timestamp: Date.now(),
-        contentType: 'application/json',
+      this.redis = new Redis({
+        host: this.redisOptions.host || process.env.REDIS_HOST || 'localhost',
+        port: this.redisOptions.port || parseInt(process.env.REDIS_PORT || '6379'),
+        password: this.redisOptions.password || process.env.REDIS_PASSWORD,
+        retryStrategy: (times: number) => Math.min(times * 50, 2000),
       });
 
-      logger.debug({ eventType: event.type, source: event.source }, 'Event published');
+      this.redis.on('error', (err: Error) => {
+        logger.error({ error: err.message }, 'Redis error');
+      });
 
-      // Also notify local subscribers
-      this.notifyLocalSubscribers(event);
+      await this.redis.ping();
+      logger.info({ stream: this.streamName }, 'EventBus initialized (Redis Streams)');
     } catch (error: any) {
-      logger.error({ error: error.message }, 'Failed to publish event');
+      logger.error({ error: error.message }, 'Failed to initialize EventBus');
+      // Continue without Redis (graceful degradation)
+      this.redis = null;
     }
   }
 
-  /**
-   * Subscribe to events by pattern
-   */
-  async subscribe(pattern: string, handler: (event: Event) => void): Promise<void> {
-    // Store local subscriber
-    if (!this.subscribers.has(pattern)) {
-      this.subscribers.set(pattern, []);
-    }
-    this.subscribers.get(pattern)!.push(handler);
+  async publish(event: Event): Promise<void> {
+    // Always notify in-process subscribers
+    this.notifyLocalSubscribers(event);
 
-    if (!this.channel) {
-      logger.warn('EventBus not initialized, subscription stored locally only');
-      return;
-    }
+    if (!this.redis) return;
 
     try {
-      // Create queue for this subscriber
-      const queue = await this.channel.assertQueue('', { exclusive: true });
-      const routingKey = pattern.replace('.', '_');
-
-      await this.channel.bindQueue(queue.queue, this.exchangeName, routingKey);
-
-      await this.channel.consume(
-        queue.queue,
-        (msg: amqp.ConsumeMessage | null) => {
-          if (msg) {
-            try {
-              const event: Event = JSON.parse(msg.content.toString());
-              handler(event);
-              this.channel!.ack(msg);
-            } catch (error: any) {
-              logger.error({ error: error.message }, 'Failed to handle event');
-              this.channel!.nack(msg, false, false);
-            }
-          }
-        },
-        { noAck: false },
+      await this.redis.xadd(
+        this.streamName,
+        '*',
+        'type',
+        event.type,
+        'source',
+        event.source,
+        'timestamp',
+        event.timestamp.toISOString(),
+        'correlationId',
+        event.correlationId || '',
+        'data',
+        JSON.stringify(event.data ?? null),
       );
-
-      logger.info({ pattern }, 'Subscribed to event pattern');
     } catch (error: any) {
-      logger.error({ error: error.message }, 'Failed to subscribe');
+      logger.error({ error: error.message }, 'Failed to persist event to Redis stream');
     }
   }
 
-  /**
-   * Notify local subscribers (in-process)
-   */
+  async subscribe(pattern: string, handler: (event: Event) => void): Promise<void> {
+    if (!this.subscribers.has(pattern)) this.subscribers.set(pattern, []);
+    this.subscribers.get(pattern)!.push(handler);
+  }
+
   private notifyLocalSubscribers(event: Event): void {
     this.subscribers.forEach((handlers, pattern) => {
       if (this.matchPattern(event.type, pattern)) {
@@ -161,34 +100,22 @@ export class EventBus {
   }
 
   private matchPattern(eventType: string, pattern: string): boolean {
-    // Simple pattern matching (exact or wildcard)
     if (pattern === '*') return true;
     if (pattern === eventType) return true;
     if (pattern.endsWith('.*') && eventType.startsWith(pattern.slice(0, -2))) return true;
     return false;
   }
 
-  /**
-   * Publish workflow event
-   */
-  async publishWorkflowEvent(
-    workflowId: string,
-    phase: string,
-    status: string,
-    data: any,
-  ): Promise<void> {
+  async publishWorkflowEvent(workflowId: string, phase: string, status: string, data: unknown): Promise<void> {
     await this.publish({
       type: 'workflow.phase.changed',
       source: 'workflow-engine',
-      data: { workflowId, phase, status, ...data },
+      data: { workflowId, phase, status, ...(data as any) },
       timestamp: new Date(),
       correlationId: workflowId,
     });
   }
 
-  /**
-   * Publish service health event
-   */
   async publishHealthEvent(serviceId: string, status: 'healthy' | 'unhealthy'): Promise<void> {
     await this.publish({
       type: 'service.health.changed',
@@ -198,16 +125,11 @@ export class EventBus {
     });
   }
 
-  /**
-   * Close connection
-   */
   async close(): Promise<void> {
     try {
-      if (this.channel) await this.channel.close();
-      if (this.connection) await (this.connection as any).close();
+      await this.redis?.quit();
     } catch (error: any) {
       logger.warn({ error: error.message }, 'Error closing EventBus connections');
     }
-    logger.info('EventBus closed');
   }
 }

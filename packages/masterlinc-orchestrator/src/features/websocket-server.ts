@@ -3,6 +3,7 @@
  * Sends workflow updates, call events, and system notifications to connected clients
  */
 
+import type { IncomingMessage } from 'http';
 import { WebSocketServer, WebSocket } from 'ws';
 import { pino } from 'pino';
 import type { Server } from 'http';
@@ -25,7 +26,7 @@ export class RealtimeServer {
   }
 
   private setupWebSocketServer(): void {
-    this.wss.on('connection', (ws: WebSocket, req) => {
+    this.wss.on('connection', (ws: WebSocket, req: IncomingMessage) => {
       const clientId = this.generateClientId();
       this.clients.set(clientId, ws);
       
@@ -52,7 +53,7 @@ export class RealtimeServer {
         logger.info({ clientId }, 'WebSocket client disconnected');
       });
 
-      ws.on('error', (error) => {
+      ws.on('error', (error: Error) => {
         logger.error({ error: error.message, clientId }, 'WebSocket error');
         this.clients.delete(clientId);
       });

@@ -46,7 +46,7 @@ class MasterLincOrchestrator {
     this.basma = new BasmaIntegration(this.registry);
     this.healthcare = new HealthcareIntegration(this.registry);
     this.oid = new OIDIntegration(this.registry);
-    this.sbs = new SBSIntegration(this.registry);
+    this.sbs = new SBSIntegration(this.registry, this.db);
     this.nlp = new NlpService(this.config.ANTHROPIC_API_KEY || '');
     this.workflow = new WorkflowEngine(
       this.basma,
@@ -56,7 +56,7 @@ class MasterLincOrchestrator {
       this.db,
       this.nlp,
     );
-    this.eventBus = new EventBus(process.env.RABBITMQ_URL || 'amqp://localhost');
+    this.eventBus = new EventBus();
     this.analytics = new AnalyticsEngine(this.db);
   }
 
@@ -273,6 +273,24 @@ class MasterLincOrchestrator {
       try {
         const result = await this.sbs.submitClaimToNPHIES(req.params.claimId);
         res.json(result);
+      } catch (error: any) {
+        res.status(500).json({ error: error.message });
+      }
+    });
+
+    this.app.get('/api/claims/patient/:oid', async (req: Request, res: Response) => {
+      try {
+        const claims = await this.sbs.getPatientClaims(req.params.oid);
+        res.json(claims);
+      } catch (error: any) {
+        res.status(500).json({ error: error.message });
+      }
+    });
+
+    this.app.get('/api/claims/:claimId', async (req: Request, res: Response) => {
+      try {
+        const claim = await this.sbs.getClaimDetails(req.params.claimId);
+        res.json(claim);
       } catch (error: any) {
         res.status(500).json({ error: error.message });
       }
