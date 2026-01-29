@@ -83,10 +83,15 @@ export class DatabaseManager {
       }
       pgClient.release();
 
-      // Initialize MongoDB
-      await this.mongoClient.connect();
-      this.mongodb = this.mongoClient.db(process.env.MONGODB_DB || 'masterlinc');
-      logger.info('MongoDB connected');
+      // Initialize MongoDB (optional - skip if not available)
+      try {
+        await this.mongoClient.connect();
+        this.mongodb = this.mongoClient.db(process.env.MONGODB_DB || 'masterlinc');
+        logger.info('MongoDB connected');
+      } catch (mongoError: any) {
+        logger.warn({ error: mongoError.message }, 'MongoDB not available - continuing without document store');
+        // MongoDB is optional, continue without it
+      }
 
       // Create schemas
       await this.createSchemas();

@@ -1,0 +1,25 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: masterlinc-postgres
+    restart: always
+    ports:
+      - "5433:5432"
+    environment:
+      - POSTGRES_USER=masterlinc
+      - POSTGRES_PASSWORD=MasterLinc2026Secure!
+      - POSTGRES_DB=masterlinc
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infrastructure/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - brainsait-net
+
+volumes:
+  postgres_data:
+
+networks:
+  brainsait-net:
+    external: true
