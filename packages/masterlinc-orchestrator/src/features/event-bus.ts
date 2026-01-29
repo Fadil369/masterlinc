@@ -169,8 +169,12 @@ export class EventBus {
 
     try {
       // Create consumer group if it doesn't exist
-      await this.redis.xgroup('CREATE', this.streamName, consumerGroup, '0', 'MKSTREAM').catch(() => {
-        // Group already exists, ignore error
+      await this.redis.xgroup('CREATE', this.streamName, consumerGroup, '0', 'MKSTREAM').catch((err: Error) => {
+        // Only ignore BUSYGROUP error (group already exists)
+        if (!err.message.includes('BUSYGROUP')) {
+          logger.error({ error: err.message }, 'Failed to create consumer group');
+          throw err;
+        }
       });
 
       const count = options.count || 10;
@@ -218,6 +222,12 @@ export class EventBus {
         fieldMap[fields[i]] = fields[i + 1];
       }
 
+      // Validate required fields
+      if (!fieldMap.type || !fieldMap.source || !fieldMap.timestamp) {
+        logger.warn({ fields: Object.keys(fieldMap) }, 'Event missing required fields');
+        return null;
+      }
+
       return {
         type: fieldMap.type,
         source: fieldMap.source,
@@ -225,8 +235,8 @@ export class EventBus {
         correlationId: fieldMap.correlationId || undefined,
         data: JSON.parse(fieldMap.data || 'null'),
       };
-    } catch (error) {
-      logger.warn('Failed to parse event from fields');
+    } catch (error: any) {
+      logger.warn({ error: error.message }, 'Failed to parse event from fields');
       return null;
     }
   }

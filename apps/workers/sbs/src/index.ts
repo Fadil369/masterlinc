@@ -1,4 +1,4 @@
-import { Hono } from 'hono';
+import { Hono, Context } from 'hono';
 import { cors } from 'hono/cors';
 import { ClaimCreateRequest } from '@brainsait/sbs-types';
 
@@ -8,28 +8,42 @@ type Bindings = {
   API_KEY?: string; // Optional API key for authentication
 };
 
+type AppContext = Context<{ Bindings: Bindings }>;
+
 const app = new Hono<{ Bindings: Bindings }>();
 
-// CORS configuration - more restrictive in production
+// CORS configuration - environment-aware
 app.use('*', cors({
-  origin: (origin) => {
-    // Allow all origins in development, restrict in production
+  origin: (origin, c) => {
     const allowedOrigins = [
       'https://brainsait.com',
       'https://healthcare.brainsait.com',
       'https://masterlinc.brainsait.com'
     ];
-    if (!origin) return '*'; // Allow requests without origin (e.g., server-to-server)
+    
+    // Allow requests without origin (e.g., server-to-server)
+    if (!origin) return '*';
+    
+    // Check allowlist
     if (allowedOrigins.includes(origin)) return origin;
-    if (origin.endsWith('.github.app')) return origin; // Allow GitHub Spark apps
-    return origin; // Fallback for development
+    
+    // Allow GitHub Spark apps in any environment
+    if (origin.endsWith('.github.app')) return origin;
+    
+    // In production, reject unknown origins; in dev allow all
+    const env = (c as any)?.env?.ENVIRONMENT;
+    if (env === 'production') {
+      return ''; // Reject by returning empty string
+    }
+    
+    return origin; // Development fallback
   },
   allowMethods: ['GET', 'POST', 'PATCH', 'OPTIONS'],
   allowHeaders: ['Content-Type', 'Authorization', 'X-API-Key'],
 }));
 
 // Simple API key authentication middleware (optional - enabled when API_KEY is set)
-const authenticate = async (c: any, next: () => Promise<void>) => {
+const authenticate = async (c: AppContext, next: () => Promise<void>) => {
   // Skip auth for health endpoint
   if (c.req.path === '/health') {
     return next();
@@ -50,7 +64,20 @@ app.use('/api/*', authenticate);
 
 // Input validation helpers
 const validateOID = (oid: string | undefined): boolean => {
-  return typeof oid === 'string' && oid.length > 0 && oid.length <= 255;
+  // OID should be a string with alphanumeric characters, dots, and underscores
+  if (typeof oid !== 'string' || oid.length === 0 || oid.length > 255) {
+    return false;
+  }
+  // Basic pattern: alphanumeric, dots, underscores, hyphens
+  return /^[a-zA-Z0-9._-]+$/.test(oid);
+};
+
+const validateClaimId = (claimId: string | undefined): boolean => {
+  // Claim ID must start with 'claim_' and contain only alphanumeric chars and underscores
+  if (typeof claimId !== 'string' || !claimId.startsWith('claim_')) {
+    return false;
+  }
+  return /^claim_[a-zA-Z0-9_]+$/.test(claimId);
 };
 
 const validateService = (service: any): { valid: boolean; error?: string } => {
@@ -73,6 +100,13 @@ const validateService = (service: any): { valid: boolean; error?: string } => {
 const handleError = (error: any, operation: string): { message: string } => {
   console.error(`[SBS Worker] ${operation} failed:`, error.message || error);
   return { message: 'An internal error occurred' };
+};
+
+// Generate unique claim ID using timestamp + crypto random
+const generateClaimId = (): string => {
+  const timestamp = Date.now();
+  const randomPart = crypto.randomUUID().split('-')[0]; // First segment of UUID
+  return `claim_${timestamp}_${randomPart}`;
 };
 
 // Health Check (public endpoint)
