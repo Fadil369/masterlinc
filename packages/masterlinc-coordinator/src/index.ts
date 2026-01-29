@@ -146,19 +146,19 @@ async function analyzeStudyCommand(studyId: string): Promise<string> {
 
     if (analysis.findings.length > 0) {
       response += `🔍 *Key Areas to Evaluate*:\n`;
-      analysis.findings.forEach(f => response += `• ${f}\n`);
+      analysis.findings.forEach((f: string) => response += `• ${f}\n`);
       response += `\n`;
     }
 
     if (analysis.qualityChecks.length > 0) {
       response += `✅ *Quality Checks*:\n`;
-      analysis.qualityChecks.forEach(q => response += `• ${q}\n`);
+      analysis.qualityChecks.forEach((q: string) => response += `• ${q}\n`);
       response += `\n`;
     }
 
     if (analysis.recommendations.length > 0) {
       response += `💡 *Recommendations*:\n`;
-      analysis.recommendations.forEach(r => response += `• ${r}\n`);
+      analysis.recommendations.forEach((r: string) => response += `• ${r}\n`);
       response += `\n`;
     }
 
