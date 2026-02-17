@@ -8,6 +8,10 @@ dotenv.config();
 const app = express();
 app.use(express.json());
 
+// TODO: Add rate limiting for production deployment
+// Recommended: Use express-rate-limit middleware
+// Example: app.use('/api', rateLimit({ windowMs: 60000, max: 100 }))
+
 const PEN = process.env.OID_PEN || '61026';
 const ROOT_OID = `1.3.6.1.4.1.${PEN}`;
 
