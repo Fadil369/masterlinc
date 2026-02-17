@@ -12,11 +12,17 @@
     "build": "turbo run build",
     "deploy": "turbo run deploy",
     "db:migrate": "wrangler d1 execute basma_production --file=./infrastructure/schema.sql",
-    "db:seed": "tsx infrastructure/seed.ts"
+    "db:seed": "tsx infrastructure/seed.ts",
+    "verify": "bash scripts/phase1-verify.sh",
+    "health-check": "npx tsx scripts/health-check.ts",
+    "validate-db": "bash scripts/validate-database.sh",
+    "test:integration": "npx tsx scripts/integration-tests.ts",
+    "test": "npm run test:integration"
   },
   "devDependencies": {
     "turbo": "^1.11.2",
     "typescript": "^5.3.3",
-    "tsx": "^4.7.0"
+    "tsx": "^4.7.0",
+    "axios": "^1.6.0"
   }
 }
