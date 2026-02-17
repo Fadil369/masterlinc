@@ -1,0 +1,23 @@
+# Base image for all Node.js services
+FROM node:20-alpine
+
+# Install system dependencies
+RUN apk add --no-cache \
+    python3 \
+    make \
+    g++ \
+    postgresql-client \
+    curl
+
+# Create app directory
+WORKDIR /app
+
+# Install global dependencies
+RUN npm install -g tsx typescript
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
+  CMD curl -f http://localhost:${PORT:-3000}/health || exit 1
+
+# Default command (override in specific Dockerfiles)
+CMD ["npm", "start"]
