@@ -1,0 +1,31 @@
+{
+  "name": "@masterlinc/mobile",
+  "version": "1.0.0",
+  "description": "MasterLinc Mobile App - React Native",
+  "main": "index.js",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "web": "expo start --web",
+    "build:android": "eas build --platform android",
+    "build:ios": "eas build --platform ios"
+  },
+  "dependencies": {
+    "expo": "~50.0.0",
+    "react": "18.2.0",
+    "react-native": "0.73.0",
+    "react-navigation": "^4.4.4",
+    "@react-navigation/native": "^6.1.9",
+    "@react-navigation/stack": "^6.3.20",
+    "axios": "^1.6.5",
+    "react-native-webrtc": "^118.0.3",
+    "socket.io-client": "^4.6.1"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.20.0",
+    "@types/react": "~18.2.45",
+    "typescript": "^5.3.3"
+  },
+  "private": true
+}
