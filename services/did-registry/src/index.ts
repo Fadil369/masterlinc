@@ -66,6 +66,14 @@ app.post('/api/did/doctor/create', async (req, res) => {
     const publicKeyMultibase = `z${base58Encode(keyPair.publicKey)}`;
     const oid = `${OID_ROOT}.2.1.1.${doctorId}`;
 
+    // SECURITY NOTE: In production, private keys should be:
+    // 1. Encrypted before storage using a Key Management Service (KMS)
+    // 2. Stored in a secure vault (e.g., HashiCorp Vault, AWS KMS)
+    // 3. Never exposed in API responses or logs
+    // 4. Only accessible through secure authentication
+    // For this Phase 1 implementation, we store metadata about the key
+    // but not the actual private key value.
+
     const didDocument = {
       '@context': ['https://www.w3.org/ns/did/v1'],
       id: did,
@@ -99,7 +107,7 @@ app.post('/api/did/doctor/create', async (req, res) => {
       didDocument,
       oid,
       publicKey: publicKeyMultibase,
-      privateKey: Buffer.from(keyPair.secretKey).toString('base64'),
+      message: 'DID created successfully. Private key has been generated securely. In production, implement secure key storage (KMS/Vault).',
     });
   } catch (error) {
     console.error('Error creating doctor DID:', error);
