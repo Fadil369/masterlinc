@@ -18,6 +18,12 @@
     "lint": {
       "outputs": []
     },
+    "type-check": {
+      "outputs": []
+    },
+    "clean": {
+      "cache": false
+    },
     "start": {
       "cache": false,
       "persistent": true

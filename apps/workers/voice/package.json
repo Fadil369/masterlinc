@@ -7,11 +7,11 @@
     "deploy": "wrangler deploy"
   },
   "dependencies": {
-    "@basma/shared": "*",
-    "hono": "^4.0.0"
+    "@basma/shared": "^1.0.0",
+    "hono": "^4.11.9"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.20240620.0",
-    "wrangler": "^4.56.0"
+    "@cloudflare/workers-types": "^4.20260217.0",
+    "wrangler": "^4.66.0"
   }
 }

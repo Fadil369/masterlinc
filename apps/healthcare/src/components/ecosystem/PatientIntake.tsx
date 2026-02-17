@@ -25,7 +25,7 @@ interface IntakeForm {
 
 export function PatientIntake() {
   const [currentStep, setCurrentStep] = useState(1)
-  const [formData, setFormData] = useState<Partial<IntakeForm>>('intake-form', {})
+  const [formData, setFormData] = useState<Partial<IntakeForm>>({})
 
   const steps = [
     { number: 1, title: 'Demographics', icon: 'person' },

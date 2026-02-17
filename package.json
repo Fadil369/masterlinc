@@ -11,12 +11,17 @@
     "dev": "turbo run dev",
     "build": "turbo run build",
     "deploy": "turbo run deploy",
+    "lint": "turbo run lint",
+    "clean": "turbo run clean && rm -rf node_modules .turbo",
+    "type-check": "turbo run type-check",
     "db:migrate": "wrangler d1 execute basma_production --file=./infrastructure/schema.sql",
-    "db:seed": "tsx infrastructure/seed.ts"
+    "db:seed": "tsx infrastructure/seed.ts",
+    "audit:fix": "npm audit fix --legacy-peer-deps",
+    "update:deps": "npm update --legacy-peer-deps"
   },
   "devDependencies": {
-    "turbo": "^1.11.2",
-    "typescript": "^5.3.3",
-    "tsx": "^4.7.0"
+    "tsx": "^4.21.0",
+    "turbo": "^1.13.4",
+    "typescript": "^5.9.3"
   }
 }

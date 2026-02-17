@@ -59,8 +59,8 @@ const mockMessages: Message[] = [
 ]
 
 export function DirectMessages() {
-  const [conversations, setConversations] = useState<Conversation[]>('conversations', mockConversations)
-  const [messages, setMessages] = useState<Message[]>('messages', mockMessages)
+  const [conversations, setConversations] = useState<Conversation[]>(mockConversations)
+  const [messages, setMessages] = useState<Message[]>(mockMessages)
   const [selectedConversation, setSelectedConversation] = useState<string | null>('1')
   const [messageInput, setMessageInput] = useState('')
   const { addNotification } = useNotificationContext()

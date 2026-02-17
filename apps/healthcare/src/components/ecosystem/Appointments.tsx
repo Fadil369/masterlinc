@@ -43,7 +43,7 @@ const mockAppointments: Appointment[] = [
 ]
 
 export function Appointments() {
-  const [appointments, setAppointments] = useState<Appointment[]>('appointments', mockAppointments)
+  const [appointments, setAppointments] = useState<Appointment[]>(mockAppointments)
   const [selectedDate, setSelectedDate] = useState('2024-01-15')
   const [view, setView] = useState<'day' | 'week' | 'month'>('day')
   const { addNotification } = useNotificationContext()
