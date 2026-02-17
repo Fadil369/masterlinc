@@ -1,0 +1,86 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: brainsait-postgres
+    environment:
+      POSTGRES_USER: brainsait_admin
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-BrainSAIT2026Secure!}
+      POSTGRES_DB: brainsait_healthcare
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ../../infrastructure/database/brainsait-schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    ports:
+      - "5432:5432"
+    networks:
+      - brainsait-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U brainsait_admin"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: brainsait-redis
+    command: redis-server --requirepass ${REDIS_PASSWORD:-BrainSAIT2026Redis!}
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - brainsait-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  oid-registry:
+    build:
+      context: ../../services/oid-registry
+      dockerfile: Dockerfile
+    container_name: brainsait-oid-registry
+    environment:
+      DATABASE_URL: postgresql://brainsait_admin:${DB_PASSWORD:-BrainSAIT2026Secure!}@postgres:5432/brainsait_healthcare
+      REDIS_URL: redis://:${REDIS_PASSWORD:-BrainSAIT2026Redis!}@redis:6379
+      OID_PEN: "61026"
+      PORT: "3001"
+    ports:
+      - "3001:3001"
+    networks:
+      - brainsait-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  did-registry:
+    build:
+      context: ../../services/did-registry
+      dockerfile: Dockerfile
+    container_name: brainsait-did-registry
+    environment:
+      DATABASE_URL: postgresql://brainsait_admin:${DB_PASSWORD:-BrainSAIT2026Secure!}@postgres:5432/brainsait_healthcare
+      REDIS_URL: redis://:${REDIS_PASSWORD:-BrainSAIT2026Redis!}@redis:6379
+      OID_ROOT: "1.3.6.1.4.1.61026"
+      PORT: "3002"
+    ports:
+      - "3002:3002"
+    networks:
+      - brainsait-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  brainsait-network:
+    driver: bridge

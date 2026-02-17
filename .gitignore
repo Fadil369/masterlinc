@@ -61,3 +61,7 @@ Public/
 .CFUserTextEncoding
 .wrangler/
 .turbo/
+
+# BrainSAIT Service Build Artifacts
+services/*/dist/
+services/*/node_modules/
