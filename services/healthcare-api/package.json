@@ -1,7 +1,7 @@
 {
-  "name": "@brainsait/oid-registry",
+  "name": "@brainsait/healthcare-api",
   "version": "1.0.0",
-  "description": "BrainSAIT OID Registry Service",
+  "description": "BrainSAIT Healthcare API - Patient workflows, triage, vitals, clinical documentation",
   "main": "dist/index.js",
   "scripts": {
     "dev": "nodemon --exec ts-node src/index.ts",
@@ -14,13 +14,17 @@
     "redis": "^4.6.10",
     "uuid": "^9.0.1",
     "dotenv": "^16.3.1",
-    "qrcode": "^1.5.3"
+    "axios": "^1.6.0",
+    "joi": "^17.11.0",
+    "bcrypt": "^5.1.1",
+    "jsonwebtoken": "^9.0.2"
   },
   "devDependencies": {
     "@types/express": "^4.17.20",
     "@types/node": "^20.9.0",
     "@types/pg": "^8.10.7",
-    "@types/qrcode": "^1.5.5",
+    "@types/bcrypt": "^5.0.2",
+    "@types/jsonwebtoken": "^9.0.5",
     "typescript": "^5.2.2",
     "nodemon": "^3.0.1",
     "ts-node": "^10.9.1"
