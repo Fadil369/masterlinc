@@ -1,0 +1,54 @@
+name: Bundle Size Analysis
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm install --legacy-peer-deps
+      
+      - name: Build
+        run: npm run build
+      
+      - name: Analyze bundle
+        run: |
+          echo "## 📦 Bundle Size Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          echo "### Healthcare App" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          du -sh apps/healthcare/dist >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Chunks:" >> $GITHUB_STEP_SUMMARY
+          ls -lh apps/healthcare/dist/assets/*.js 2>/dev/null | awk '{printf "%-50s %s\n", $9, $5}' >> $GITHUB_STEP_SUMMARY || true
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          echo "### Web App" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          du -sh apps/web/.next >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+      
+      - name: Check size limits
+        run: |
+          HEALTHCARE_SIZE=$(du -sk apps/healthcare/dist | awk '{print $1}')
+          MAX_HEALTHCARE=1024  # 1MB
+          
+          if [ $HEALTHCARE_SIZE -gt $MAX_HEALTHCARE ]; then
+            echo "::warning::Healthcare bundle ($HEALTHCARE_SIZE KB) exceeds $MAX_HEALTHCARE KB"
+          else
+            echo "::notice::Healthcare bundle size: $HEALTHCARE_SIZE KB (within limit)"
+          fi

@@ -29,8 +29,10 @@
       "persistent": true
     },
     "test": {
-      "dependsOn": ["build"],
-      "outputs": []
+      "outputs": ["coverage/**"]
+    },
+    "test:coverage": {
+      "outputs": ["coverage/**"]
     },
     "db:migrate": {
       "cache": false

@@ -28,11 +28,11 @@ export default defineConfig({
       }
     },
     chunkSizeWarningLimit: 600,
-    sourcemap: false,
+    sourcemap: process.env.NODE_ENV === 'staging' ? true : false,
     minify: 'terser',
     terserOptions: {
       compress: {
-        drop_console: true,
+        drop_console: process.env.NODE_ENV === 'production',
         drop_debugger: true
       }
     }

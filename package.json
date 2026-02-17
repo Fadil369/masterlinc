@@ -12,12 +12,15 @@
     "build": "turbo run build",
     "deploy": "turbo run deploy",
     "lint": "turbo run lint",
+    "test": "turbo run test",
+    "test:coverage": "turbo run test:coverage",
     "clean": "turbo run clean && rm -rf node_modules .turbo",
     "type-check": "turbo run type-check",
     "db:migrate": "wrangler d1 execute basma_production --file=./infrastructure/schema.sql",
     "db:seed": "tsx infrastructure/seed.ts",
     "audit:fix": "npm audit fix --legacy-peer-deps",
-    "update:deps": "npm update --legacy-peer-deps"
+    "update:deps": "npm update --legacy-peer-deps",
+    "postinstall": "npm audit fix --legacy-peer-deps || true"
   },
   "devDependencies": {
     "tsx": "^4.21.0",
