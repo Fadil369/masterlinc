@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react'
-import { useKV } from '@github/spark/hooks'
 import { Conversation, Message } from '../../types'
 import { useNotificationContext } from '../../contexts/NotificationContext'
 
@@ -60,8 +59,8 @@ const mockMessages: Message[] = [
 ]
 
 export function DirectMessages() {
-  const [conversations, setConversations] = useKV<Conversation[]>('conversations', mockConversations)
-  const [messages, setMessages] = useKV<Message[]>('messages', mockMessages)
+  const [conversations, setConversations] = useState<Conversation[]>('conversations', mockConversations)
+  const [messages, setMessages] = useState<Message[]>('messages', mockMessages)
   const [selectedConversation, setSelectedConversation] = useState<string | null>('1')
   const [messageInput, setMessageInput] = useState('')
   const { addNotification } = useNotificationContext()

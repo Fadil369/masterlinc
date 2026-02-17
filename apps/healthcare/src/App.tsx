@@ -10,7 +10,6 @@ import { SearchResult, Notification } from './types'
 import { useRealtimeNotifications } from './hooks/use-realtime-notifications'
 import { NotificationProvider, useNotificationContext } from './contexts/NotificationContext'
 import { Toaster } from './components/ui/sonner'
-import { useKV } from '@github/spark/hooks'
 import { Conversation } from './types'
 
 import { LiveFacilitiesMap } from './components/ecosystem/LiveFacilitiesMap'
@@ -81,7 +80,7 @@ type View = 'directory' | 'live' | 'voice' | 'appointments' | 'messages' | 'inta
 function AppContent() {
   const [currentView, setCurrentView] = useState<View>('directory')
   const [directoryMode, setDirectoryMode] = useState<'list' | 'map'>('list')
-  const [conversations] = useKV<Conversation[]>('conversations', [])
+  const [conversations] = useState<Conversation[]>([])
   const { notifications } = useNotificationContext()
   
   useRealtimeNotifications(true)

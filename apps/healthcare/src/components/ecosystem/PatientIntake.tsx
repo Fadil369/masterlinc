@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { useKV } from '@github/spark/hooks'
 
 interface IntakeForm {
   demographics: {
@@ -26,7 +25,7 @@ interface IntakeForm {
 
 export function PatientIntake() {
   const [currentStep, setCurrentStep] = useState(1)
-  const [formData, setFormData] = useKV<Partial<IntakeForm>>('intake-form', {})
+  const [formData, setFormData] = useState<Partial<IntakeForm>>('intake-form', {})
 
   const steps = [
     { number: 1, title: 'Demographics', icon: 'person' },

@@ -1,10 +1,9 @@
-import { useEffect, useCallback } from 'react'
-import { useKV } from '@github/spark/hooks'
+import { useEffect, useCallback, useState } from 'react'
 import { Notification, NotificationType, NotificationPriority } from '../types'
 import { toast } from 'sonner'
 
 export function useNotifications() {
-  const [notifications, setNotifications] = useKV<Notification[]>('notifications', [])
+  const [notifications, setNotifications] = useState<Notification[]>([])
 
   const addNotification = useCallback((
     type: NotificationType,

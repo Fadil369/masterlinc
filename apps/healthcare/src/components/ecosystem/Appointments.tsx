@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react'
-import { useKV } from '@github/spark/hooks'
 import { Appointment } from '../../types'
 import { useNotificationContext } from '../../contexts/NotificationContext'
 import { toast } from 'sonner'
@@ -44,7 +43,7 @@ const mockAppointments: Appointment[] = [
 ]
 
 export function Appointments() {
-  const [appointments, setAppointments] = useKV<Appointment[]>('appointments', mockAppointments)
+  const [appointments, setAppointments] = useState<Appointment[]>('appointments', mockAppointments)
   const [selectedDate, setSelectedDate] = useState('2024-01-15')
   const [view, setView] = useState<'day' | 'week' | 'month'>('day')
   const { addNotification } = useNotificationContext()
