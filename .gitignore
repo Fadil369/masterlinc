@@ -65,3 +65,5 @@ Public/
 # BrainSAIT Service Build Artifacts
 services/*/dist/
 services/*/node_modules/
+file.md
+*.log
