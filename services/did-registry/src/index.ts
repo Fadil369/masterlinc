@@ -63,7 +63,7 @@ function base58Encode(buffer: Uint8Array): string {
 
 app.post('/api/did/doctor/create', async (req, res) => {
   try {
-    const { licenseNumber, region, specialty } = req.body;
+    const { licenseNumber, region, specialty, fullName, phone, email } = req.body;
     const doctorId = `dr-${licenseNumber || crypto.randomUUID()}`;
     const did = generateDID('doctors', doctorId);
     const keyPair = generateKeyPair();
@@ -98,6 +98,14 @@ app.post('/api/did/doctor/create', async (req, res) => {
       [did, JSON.stringify(didDocument), oid, publicKeyMultibase, 'doctor', JSON.stringify({ algorithm: 'Ed25519' })]
     );
 
+    // Insert into doctors table
+    await pool.query(
+      `INSERT INTO doctors (license_number, did, did_document, oid_identifier, public_key_multibase, key_pair_metadata, full_name, specialty, region, phone, email)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+       ON CONFLICT (did) DO NOTHING`,
+      [licenseNumber, did, JSON.stringify(didDocument), oid, publicKeyMultibase, JSON.stringify({ algorithm: 'Ed25519' }), fullName, specialty, region, phone, email]
+    );
+
     await pool.query(
       `INSERT INTO did_oid_mapping (did, oid, mapping_type, verified_at) VALUES ($1, $2, $3, $4)`,
       [did, oid, 'doctor', new Date()]
@@ -116,6 +124,198 @@ app.post('/api/did/doctor/create', async (req, res) => {
   } catch (error) {
     console.error('Error creating doctor DID:', error);
     res.status(500).json({ success: false, error: 'Failed to create doctor DID' });
+  }
+});
+
+// Issue verifiable credential
+app.post('/api/did/credential/issue', async (req, res) => {
+  try {
+    const { doctorDid, credentialType, issuerDid, issuerName, credentialData, expiresInDays = 365 } = req.body;
+
+    if (!doctorDid || !credentialType || !issuerDid) {
+      return res.status(400).json({ success: false, error: 'doctorDid, credentialType, and issuerDid required' });
+    }
+
+    // Verify doctor exists
+    const doctorResult = await pool.query('SELECT * FROM doctors WHERE did = $1', [doctorDid]);
+    if (doctorResult.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Doctor DID not found' });
+    }
+
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + expiresInDays);
+
+    const credential = {
+      '@context': ['https://www.w3.org/2018/credentials/v1'],
+      type: ['VerifiableCredential', credentialType],
+      issuer: issuerDid,
+      issuanceDate: new Date().toISOString(),
+      expirationDate: expiresAt.toISOString(),
+      credentialSubject: {
+        id: doctorDid,
+        ...credentialData
+      },
+      proof: {
+        type: 'Ed25519Signature2020',
+        created: new Date().toISOString(),
+        proofPurpose: 'assertionMethod',
+        verificationMethod: `${issuerDid}#key-1`
+      }
+    };
+
+    const vcId = crypto.randomUUID();
+    await pool.query(
+      `INSERT INTO doctor_verifiable_credentials (vc_id, doctor_did, vc_type, issuer_did, issuer_name, credential_data, expires_at, proof)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+      [vcId, doctorDid, credentialType, issuerDid, issuerName, JSON.stringify(credentialData), expiresAt, JSON.stringify(credential.proof)]
+    );
+
+    res.status(201).json({
+      success: true,
+      credential,
+      vcId
+    });
+  } catch (error) {
+    console.error('Error issuing credential:', error);
+    res.status(500).json({ success: false, error: 'Failed to issue credential' });
+  }
+});
+
+// Verify credential
+app.post('/api/did/credential/verify', async (req, res) => {
+  try {
+    const { vcId } = req.body;
+
+    if (!vcId) {
+      return res.status(400).json({ success: false, error: 'vcId required' });
+    }
+
+    const result = await pool.query('SELECT * FROM doctor_verifiable_credentials WHERE vc_id = $1', [vcId]);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Credential not found' });
+    }
+
+    const vc = result.rows[0];
+    const isActive = vc.status === 'active';
+    const isNotExpired = !vc.expires_at || new Date(vc.expires_at) > new Date();
+
+    res.json({
+      success: true,
+      verification: {
+        isValid: isActive && isNotExpired,
+        isActive,
+        isNotExpired,
+        status: vc.status,
+        expiresAt: vc.expires_at,
+        credential: vc
+      }
+    });
+  } catch (error) {
+    console.error('Error verifying credential:', error);
+    res.status(500).json({ success: false, error: 'Failed to verify credential' });
+  }
+});
+
+// Revoke credential
+app.post('/api/did/credential/revoke', async (req, res) => {
+  try {
+    const { vcId, reason } = req.body;
+
+    if (!vcId) {
+      return res.status(400).json({ success: false, error: 'vcId required' });
+    }
+
+    await pool.query(
+      `UPDATE doctor_verifiable_credentials SET status = 'revoked' WHERE vc_id = $1`,
+      [vcId]
+    );
+
+    res.json({ success: true, message: 'Credential revoked', reason });
+  } catch (error) {
+    console.error('Error revoking credential:', error);
+    res.status(500).json({ success: false, error: 'Failed to revoke credential' });
+  }
+});
+
+// Resolve DID to document
+app.get('/api/did/resolve/:did', async (req, res) => {
+  try {
+    const { did } = req.params;
+
+    // Check cache first
+    const cached = await redis.get(`did:${did}`);
+    if (cached) {
+      return res.json({ success: true, didDocument: JSON.parse(cached), source: 'cache' });
+    }
+
+    // Query database
+    const result = await pool.query('SELECT * FROM did_registry WHERE did = $1', [did]);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'DID not found' });
+    }
+
+    const didDocument = result.rows[0].did_document;
+    await redis.set(`did:${did}`, JSON.stringify(didDocument), { EX: 3600 });
+
+    res.json({ success: true, didDocument, source: 'database' });
+  } catch (error) {
+    console.error('Error resolving DID:', error);
+    res.status(500).json({ success: false, error: 'Failed to resolve DID' });
+  }
+});
+
+// Get doctor's credentials
+app.get('/api/did/doctor/:did/credentials', async (req, res) => {
+  try {
+    const { did } = req.params;
+
+    const result = await pool.query(
+      'SELECT * FROM doctor_verifiable_credentials WHERE doctor_did = $1 ORDER BY issued_at DESC',
+      [did]
+    );
+
+    res.json({ success: true, credentials: result.rows });
+  } catch (error) {
+    console.error('Error fetching credentials:', error);
+    res.status(500).json({ success: false, error: 'Failed to fetch credentials' });
+  }
+});
+
+// Create digital signature (simulated)
+app.post('/api/did/sign', async (req, res) => {
+  try {
+    const { did, documentHash, documentType } = req.body;
+
+    if (!did || !documentHash) {
+      return res.status(400).json({ success: false, error: 'did and documentHash required' });
+    }
+
+    // Verify DID exists
+    const result = await pool.query('SELECT * FROM did_registry WHERE did = $1', [did]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'DID not found' });
+    }
+
+    // Create signature (simulated - in production use actual cryptographic signing)
+    const signature = {
+      type: 'Ed25519Signature2020',
+      created: new Date().toISOString(),
+      verificationMethod: `${did}#key-1`,
+      proofPurpose: 'assertionMethod',
+      proofValue: crypto.createHash('sha256').update(`${did}:${documentHash}:${Date.now()}`).digest('hex')
+    };
+
+    res.json({
+      success: true,
+      signature,
+      documentType,
+      signer: did
+    });
+  } catch (error) {
+    console.error('Error creating signature:', error);
+    res.status(500).json({ success: false, error: 'Failed to create signature' });
   }
 });
 
