@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { toast } from 'sonner';
 import { API_CONFIG } from '../config-api';
+import { logger } from '../lib/logger';
 
 // Define configuration for MasterLinc Orchestrator
 const MASTERLINC_API_URL = API_CONFIG.orchestratorUrl;
@@ -33,7 +34,7 @@ export function useMasterLinc() {
 
       if (!response.ok) {
          // Fallback simulation if local orchestrator isn't running perfectly yet
-         console.warn('Orchestrator unavailable, using fallback response');
+         logger.warn('Orchestrator unavailable, using fallback response', { orchestratorUrl });
          return {
              role: 'assistant',
              content: "I've received your query. The MasterLinc Orchestrator is processing it in the Healthcare domain.",
@@ -44,7 +45,7 @@ export function useMasterLinc() {
       const data = await response.json();
       return data;
     } catch (error: any) {
-      console.error('MasterLinc Conversation Error:', error);
+      logger.error('MasterLinc Conversation Error', error as Error, { orchestratorUrl });
       setLastError(error.message);
       toast.error('Failed to connect to MasterLinc Intelligence');
       return null;
