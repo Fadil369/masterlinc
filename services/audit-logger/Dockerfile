@@ -4,9 +4,10 @@ WORKDIR /app
 
 COPY package*.json ./
 RUN npm install
+RUN npm install -g tsx
 
 COPY . .
 
-EXPOSE 5000
+EXPOSE 3001
 
-CMD ["npm", "start"]
+CMD ["tsx", "src/index.ts"]
