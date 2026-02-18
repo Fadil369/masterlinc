@@ -6,6 +6,8 @@ export const notionBridge = {
 
   listDatabases: () => httpJson<any>(`${endpoints.notion}/api/notion/databases`),
 
+  discoverDatabases: () => httpJson<any>(`${endpoints.notion}/api/notion/databases/discover`),
+
   queryDatabase: (payload: { databaseId: string; filter?: any; sorts?: any; pageSize?: number }) =>
     httpJson<any>(`${endpoints.notion}/api/notion/query`, { method: 'POST', body: payload }),
 

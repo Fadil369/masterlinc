@@ -23,6 +23,23 @@ app.get('/api/notion/databases', async (_req, res) => {
   res.json({ results: result.results })
 })
 
+// 1b) Discover databases with full schema
+app.get('/api/notion/databases/discover', async (_req, res) => {
+  const result = await notion.search({ filter: { property: 'object', value: 'database' }, page_size: 100 })
+  const databases = await Promise.all(
+    result.results.map(async (db: any) => {
+      const dbInfo = await notion.databases.retrieve({ database_id: db.id })
+      return {
+        id: db.id,
+        title: db.title?.[0]?.plain_text || 'Untitled',
+        properties: dbInfo.properties,
+        url: db.url
+      }
+    })
+  )
+  res.json({ databases })
+})
+
 // 2) Query database
 const querySchema = z.object({
   databaseId: z.string().min(10),
