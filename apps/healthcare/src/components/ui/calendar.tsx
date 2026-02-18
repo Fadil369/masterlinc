@@ -59,10 +59,11 @@ function Calendar({
         ...classNames,
       }}
       components={{
-        PreviousMonthButton: ({ className, ...props }) => (
+        // DayPicker passes button-like props. We only need className and ignore strict typing here.
+        PreviousMonthButton: ({ className, ...props }: any) => (
           <ChevronLeft className={cn("size-4", className)} {...props} />
         ),
-        NextMonthButton: ({ className, ...props }) => (
+        NextMonthButton: ({ className, ...props }: any) => (
           <ChevronRight className={cn("size-4", className)} {...props} />
         ),
       }}

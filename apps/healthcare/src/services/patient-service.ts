@@ -15,6 +15,9 @@ export interface PatientRegistration {
   email?: string
   address: string
   
+  // National ID (optional)
+  nationalId?: string
+
   // Insurance
   insuranceProvider?: string
   policyNumber?: string
@@ -35,6 +38,7 @@ export interface PatientRecord extends PatientRegistration {
   id: string
   did?: string // Decentralized Identifier
   oid?: string // Organization Identifier
+  // National ID is optional at registration time (may be added later)
   nationalId?: string
   insuranceVerified: boolean
   consentSigned: boolean

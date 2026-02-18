@@ -21,6 +21,10 @@ import { DoctorDashboard } from './components/ecosystem/DoctorDashboard'
 import { CDIModule } from './components/ecosystem/CDIModule'
 import { RCMModule } from './components/ecosystem/RCMModule'
 import { CodingModule } from './components/ecosystem/CodingModule'
+import { PatientsFHIR } from './components/ecosystem/PatientsFHIR'
+import { Payments } from './components/ecosystem/Payments'
+import { AuditViewer } from './components/ecosystem/AuditViewer'
+import { BackendStatus } from './components/ecosystem/BackendStatus'
 
 const mockResults: SearchResult[] = [
   {
@@ -75,7 +79,7 @@ const mockResults: SearchResult[] = [
   }
 ]
 
-type View = 'directory' | 'live' | 'voice' | 'appointments' | 'messages' | 'intake' | 'doctor' | 'cdi' | 'rcm' | 'coding'
+type View = 'directory' | 'live' | 'voice' | 'appointments' | 'messages' | 'intake' | 'doctor' | 'cdi' | 'rcm' | 'coding' | 'patients' | 'payments' | 'audit'
 
 function AppContent() {
   const [currentView, setCurrentView] = useState<View>('directory')
@@ -104,6 +108,9 @@ function AppContent() {
           case 'cdi': content = <CDIModule />; break
           case 'rcm': content = <RCMModule />; break
           case 'coding': content = <CodingModule />; break
+          case 'patients': content = <PatientsFHIR />; break
+          case 'payments': content = <Payments />; break
+          case 'audit': content = <AuditViewer />; break
           default: content = (
             <div className="flex flex-1 overflow-hidden relative h-[calc(100vh-6rem)]">
                 <Sidebar />
@@ -199,7 +206,10 @@ function AppContent() {
     <div className="min-h-screen flex flex-col bg-background-light dark:bg-background-dark overflow-hidden">
       <Toaster position="top-right" expand={true} richColors closeButton />
       <nav className="h-12 bg-[#0f1a1a] border-b border-[#234848] flex items-center px-4 justify-between shrink-0 z-50 shadow-md">
-          <span className="text-[#92c9c9] text-xs font-mono font-bold uppercase tracking-wider hidden sm:block">BrainSAIT Ecosystem Demo</span>
+          <div className="hidden sm:flex flex-col">
+            <span className="text-[#92c9c9] text-xs font-mono font-bold uppercase tracking-wider">BrainSAIT Ecosystem Demo</span>
+            <div className="mt-1"><BackendStatus /></div>
+          </div>
           <div className="flex gap-2 overflow-x-auto scrollbar-hide flex-1 sm:flex-none">
               {[
                   { id: 'directory', label: 'Directory', icon: 'folder_shared', badge: 0 },
@@ -208,7 +218,10 @@ function AppContent() {
                   { id: 'appointments', label: 'Appointments', icon: 'calendar_month', badge: appointmentNotifications },
                   { id: 'messages', label: 'Messages', icon: 'chat', badge: messageCount },
                   { id: 'intake', label: 'Intake', icon: 'content_paste', badge: 0 },
-                  { id: 'doctor', label: 'Provider', icon: 'stethoscope', badge: 0 }
+                  { id: 'doctor', label: 'Provider', icon: 'stethoscope', badge: 0 },
+                  { id: 'patients', label: 'Patients', icon: 'group', badge: 0 },
+                  { id: 'payments', label: 'Payments', icon: 'payments', badge: 0 },
+                  { id: 'audit', label: 'Audit', icon: 'policy', badge: 0 }
               ].map(item => (
                   <button
                     key={item.id}

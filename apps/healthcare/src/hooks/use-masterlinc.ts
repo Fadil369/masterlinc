@@ -34,7 +34,7 @@ export function useMasterLinc() {
 
       if (!response.ok) {
          // Fallback simulation if local orchestrator isn't running perfectly yet
-         logger.warn('Orchestrator unavailable, using fallback response', { orchestratorUrl });
+         logger.warn('Orchestrator unavailable, using fallback response', { orchestratorUrl: MASTERLINC_API_URL });
          return {
              role: 'assistant',
              content: "I've received your query. The MasterLinc Orchestrator is processing it in the Healthcare domain.",
@@ -45,7 +45,7 @@ export function useMasterLinc() {
       const data = await response.json();
       return data;
     } catch (error: any) {
-      logger.error('MasterLinc Conversation Error', error as Error, { orchestratorUrl });
+      logger.error('MasterLinc Conversation Error', error as Error, { orchestratorUrl: MASTERLINC_API_URL });
       setLastError(error.message);
       toast.error('Failed to connect to MasterLinc Intelligence');
       return null;
