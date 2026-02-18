@@ -1,0 +1,97 @@
+import 'dotenv/config'
+import express from 'express'
+import cors from 'cors'
+import { z } from 'zod'
+import { loadConfig } from './config'
+import { createNotionClient } from './notion'
+import { requireApiKey } from './auth'
+
+const cfg = loadConfig(process.env)
+const notion = createNotionClient(cfg.NOTION_TOKEN)
+
+const app = express()
+app.use(cors())
+app.use(express.json({ limit: '2mb' }))
+
+app.get('/health', (_req, res) => res.json({ status: 'ok', service: 'notion-bridge' }))
+
+app.use('/api', requireApiKey(cfg.NOTION_BRIDGE_API_KEY))
+
+// 1) List databases the integration can see
+app.get('/api/notion/databases', async (_req, res) => {
+  const result = await notion.search({ filter: { property: 'object', value: 'database' } })
+  res.json({ results: result.results })
+})
+
+// 2) Query database
+const querySchema = z.object({
+  databaseId: z.string().min(10),
+  filter: z.any().optional(),
+  sorts: z.any().optional(),
+  pageSize: z.number().int().min(1).max(100).optional(),
+})
+
+app.post('/api/notion/query', async (req, res) => {
+  const body = querySchema.parse(req.body)
+  const result = await notion.databases.query({
+    database_id: body.databaseId,
+    filter: body.filter,
+    sorts: body.sorts,
+    page_size: body.pageSize,
+  } as any)
+  res.json(result)
+})
+
+// 3) Update page properties (write)
+const updateSchema = z.object({
+  pageId: z.string().min(10),
+  properties: z.record(z.any()),
+})
+
+app.post('/api/notion/page/update', async (req, res) => {
+  const body = updateSchema.parse(req.body)
+  const result = await notion.pages.update({ page_id: body.pageId, properties: body.properties } as any)
+  res.json(result)
+})
+
+// 4) Create page in database (write)
+const createSchema = z.object({
+  databaseId: z.string().min(10),
+  properties: z.record(z.any()),
+  children: z.array(z.any()).optional(),
+})
+
+app.post('/api/notion/page/create', async (req, res) => {
+  const body = createSchema.parse(req.body)
+  const result = await notion.pages.create({
+    parent: { database_id: body.databaseId },
+    properties: body.properties,
+    children: body.children,
+  } as any)
+  res.status(201).json(result)
+})
+
+// 5) Convenience: set status on a page (common workflow)
+const setStatusSchema = z.object({
+  pageId: z.string().min(10),
+  statusProperty: z.string().min(1).default('Status'),
+  statusValue: z.string().min(1),
+})
+
+app.post('/api/notion/page/set-status', async (req, res) => {
+  const body = setStatusSchema.parse(req.body)
+  const result = await notion.pages.update({
+    page_id: body.pageId,
+    properties: {
+      [body.statusProperty]: {
+        status: { name: body.statusValue },
+      },
+    },
+  } as any)
+  res.json(result)
+})
+
+app.listen(cfg.PORT, () => {
+  // never log NOTION_TOKEN
+  console.log(`notion-bridge listening on :${cfg.PORT}`)
+})

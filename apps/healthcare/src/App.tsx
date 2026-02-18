@@ -28,6 +28,7 @@ import { BackendStatus } from './components/ecosystem/BackendStatus'
 import { SBSClaims } from './components/ecosystem/SBSClaims'
 import { OidDidConsole } from './components/ecosystem/OidDidConsole'
 import { BasmaVoiceConsole } from './components/ecosystem/BasmaVoiceConsole'
+import { NotionCommandCenter } from './components/ecosystem/NotionCommandCenter'
 
 const mockResults: SearchResult[] = [
   {
@@ -82,7 +83,7 @@ const mockResults: SearchResult[] = [
   }
 ]
 
-type View = 'directory' | 'live' | 'voice' | 'appointments' | 'messages' | 'intake' | 'doctor' | 'cdi' | 'rcm' | 'coding' | 'patients' | 'payments' | 'audit' | 'sbs' | 'oid' | 'basma'
+type View = 'directory' | 'live' | 'voice' | 'appointments' | 'messages' | 'intake' | 'doctor' | 'cdi' | 'rcm' | 'coding' | 'patients' | 'payments' | 'audit' | 'sbs' | 'oid' | 'basma' | 'notion'
 
 function AppContent() {
   const [currentView, setCurrentView] = useState<View>('directory')
@@ -117,6 +118,7 @@ function AppContent() {
           case 'sbs': content = <SBSClaims />; break
           case 'oid': content = <OidDidConsole />; break
           case 'basma': content = <BasmaVoiceConsole />; break
+          case 'notion': content = <NotionCommandCenter />; break
           default: content = (
             <div className="flex flex-1 overflow-hidden relative h-[calc(100vh-6rem)]">
                 <Sidebar />
@@ -230,7 +232,8 @@ function AppContent() {
                   { id: 'audit', label: 'Audit', icon: 'policy', badge: 0 },
                   { id: 'sbs', label: 'SBS Claims', icon: 'receipt', badge: 0 },
                   { id: 'oid', label: 'OID/DID', icon: 'qr_code', badge: 0 },
-                  { id: 'basma', label: 'BASMA Voice', icon: 'call', badge: 0 }
+                  { id: 'basma', label: 'BASMA Voice', icon: 'call', badge: 0 },
+                  { id: 'notion', label: 'Notion Workspace', icon: 'description', badge: 0 }
               ].map(item => (
                   <button
                     key={item.id}

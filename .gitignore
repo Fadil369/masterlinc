@@ -1,5 +1,11 @@
 # Dependencies
 node_modules/
+
+# Local secrets
+.env
+.env.*
+services/notion-bridge/.env
+services/notion-bridge/.env.*
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*

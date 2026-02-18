@@ -104,5 +104,19 @@ services:
       - postgres
       - redis
 
+  # Notion Bridge
+  notion-bridge:
+    build:
+      context: ./services/notion-bridge
+      dockerfile: Dockerfile
+    ports:
+      - "7400:7400"
+    env_file:
+      - ./services/notion-bridge/.env
+    environment:
+      - NODE_ENV=development
+      - PORT=7400
+    depends_on: []
+
 volumes:
   postgres_data:
