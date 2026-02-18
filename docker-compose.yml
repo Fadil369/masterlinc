@@ -72,5 +72,37 @@ services:
     depends_on:
       - postgres
 
+  # OID Registry
+  oid-registry:
+    build:
+      context: ./services/oid-registry
+      dockerfile: Dockerfile
+    ports:
+      - "3201:3001"
+    environment:
+      - NODE_ENV=development
+      - PORT=3001
+      - POSTGRES_URL=postgresql://masterlinc:masterlinc_dev@postgres:5432/masterlinc
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - postgres
+      - redis
+
+  # DID Registry
+  did-registry:
+    build:
+      context: ./services/did-registry
+      dockerfile: Dockerfile
+    ports:
+      - "3202:3002"
+    environment:
+      - NODE_ENV=development
+      - PORT=3002
+      - POSTGRES_URL=postgresql://masterlinc:masterlinc_dev@postgres:5432/masterlinc
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - postgres
+      - redis
+
 volumes:
   postgres_data:
