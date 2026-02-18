@@ -5,6 +5,7 @@ import { z } from 'zod'
 import { loadConfig } from './config'
 import { createNotionClient } from './notion'
 import { requireApiKey } from './auth'
+import { NotionFHIRSync } from './sync'
 
 const cfg = loadConfig(process.env)
 const notion = createNotionClient(cfg.NOTION_TOKEN)
@@ -108,7 +109,37 @@ app.post('/api/notion/page/set-status', async (req, res) => {
   res.json(result)
 })
 
+// FHIR Sync endpoints (optional - requires FHIR_URL and PATIENTS_DB_ID env vars)
+if (process.env.FHIR_URL && process.env.NOTION_PATIENTS_DB_ID) {
+  const sync = new NotionFHIRSync(
+    notion,
+    process.env.FHIR_URL,
+    process.env.NOTION_PATIENTS_DB_ID
+  )
+
+  app.post('/api/sync/fhir-to-notion', async (req, res) => {
+    try {
+      const result = await sync.syncAllFHIRToNotion()
+      res.json(result)
+    } catch (err: any) {
+      res.status(500).json({ error: err.message })
+    }
+  })
+
+  app.post('/api/sync/notion-to-fhir/:pageId', async (req, res) => {
+    try {
+      await sync.syncNotionPatientToFHIR(req.params.pageId)
+      res.json({ success: true })
+    } catch (err: any) {
+      res.status(500).json({ error: err.message })
+    }
+  })
+}
+
 app.listen(cfg.PORT, () => {
   // never log NOTION_TOKEN
   console.log(`notion-bridge listening on :${cfg.PORT}`)
+  if (process.env.FHIR_URL) {
+    console.log(`FHIR sync enabled: ${process.env.FHIR_URL}`)
+  }
 })
