@@ -2,6 +2,9 @@
   "name": "basma",
   "version": "1.0.0",
   "private": true,
+  "engines": {
+    "node": ">=20 <24"
+  },
   "workspaces": [
     "apps/*",
     "apps/workers/*",

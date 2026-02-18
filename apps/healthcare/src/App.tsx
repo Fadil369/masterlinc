@@ -25,6 +25,9 @@ import { PatientsFHIR } from './components/ecosystem/PatientsFHIR'
 import { Payments } from './components/ecosystem/Payments'
 import { AuditViewer } from './components/ecosystem/AuditViewer'
 import { BackendStatus } from './components/ecosystem/BackendStatus'
+import { SBSClaims } from './components/ecosystem/SBSClaims'
+import { OidDidConsole } from './components/ecosystem/OidDidConsole'
+import { BasmaVoiceConsole } from './components/ecosystem/BasmaVoiceConsole'
 
 const mockResults: SearchResult[] = [
   {
@@ -79,7 +82,7 @@ const mockResults: SearchResult[] = [
   }
 ]
 
-type View = 'directory' | 'live' | 'voice' | 'appointments' | 'messages' | 'intake' | 'doctor' | 'cdi' | 'rcm' | 'coding' | 'patients' | 'payments' | 'audit'
+type View = 'directory' | 'live' | 'voice' | 'appointments' | 'messages' | 'intake' | 'doctor' | 'cdi' | 'rcm' | 'coding' | 'patients' | 'payments' | 'audit' | 'sbs' | 'oid' | 'basma'
 
 function AppContent() {
   const [currentView, setCurrentView] = useState<View>('directory')
@@ -111,6 +114,9 @@ function AppContent() {
           case 'patients': content = <PatientsFHIR />; break
           case 'payments': content = <Payments />; break
           case 'audit': content = <AuditViewer />; break
+          case 'sbs': content = <SBSClaims />; break
+          case 'oid': content = <OidDidConsole />; break
+          case 'basma': content = <BasmaVoiceConsole />; break
           default: content = (
             <div className="flex flex-1 overflow-hidden relative h-[calc(100vh-6rem)]">
                 <Sidebar />
@@ -221,7 +227,10 @@ function AppContent() {
                   { id: 'doctor', label: 'Provider', icon: 'stethoscope', badge: 0 },
                   { id: 'patients', label: 'Patients', icon: 'group', badge: 0 },
                   { id: 'payments', label: 'Payments', icon: 'payments', badge: 0 },
-                  { id: 'audit', label: 'Audit', icon: 'policy', badge: 0 }
+                  { id: 'audit', label: 'Audit', icon: 'policy', badge: 0 },
+                  { id: 'sbs', label: 'SBS Claims', icon: 'receipt', badge: 0 },
+                  { id: 'oid', label: 'OID/DID', icon: 'qr_code', badge: 0 },
+                  { id: 'basma', label: 'BASMA Voice', icon: 'call', badge: 0 }
               ].map(item => (
                   <button
                     key={item.id}

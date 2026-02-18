@@ -1,6 +1,9 @@
 {
   "name": "healthcare-app",
   "private": true,
+  "engines": {
+    "node": ">=20 <24"
+  },
   "version": "0.0.0",
   "type": "module",
   "scripts": {
