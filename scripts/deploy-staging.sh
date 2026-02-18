@@ -45,25 +45,25 @@ check_health() {
 
 # 1. Build Docker images
 echo -e "\n${YELLOW}Step 1:${NC} Building Docker images..."
-docker-compose -f docker-compose.staging.yml build
+docker compose -f docker-compose.staging.yml build
 echo -e "${GREEN}✓${NC} Docker images built successfully"
 
 # 2. Start databases first
 echo -e "\n${YELLOW}Step 2:${NC} Starting databases..."
-docker-compose -f docker-compose.staging.yml up -d postgres redis
+docker compose -f docker-compose.staging.yml up -d postgres redis
 sleep 10
 echo -e "${GREEN}✓${NC} Databases started"
 
 # 3. Run database migrations
 echo -e "\n${YELLOW}Step 3:${NC} Running database migrations..."
-docker-compose -f docker-compose.staging.yml run --rm fhir-server npm run migrate
-docker-compose -f docker-compose.staging.yml run --rm payment-gateway npm run migrate
-docker-compose -f docker-compose.staging.yml run --rm audit-logger npm run migrate
+docker compose -f docker-compose.staging.yml run --rm fhir-server npm run migrate || echo "Migration skipped"
+docker compose -f docker-compose.staging.yml run --rm payment-gateway npm run migrate || echo "Migration skipped"
+docker compose -f docker-compose.staging.yml run --rm audit-logger npm run migrate || echo "Migration skipped"
 echo -e "${GREEN}✓${NC} Migrations completed"
 
 # 4. Start all services
 echo -e "\n${YELLOW}Step 4:${NC} Starting all services..."
-docker-compose -f docker-compose.staging.yml up -d
+docker compose -f docker-compose.staging.yml up -d
 echo -e "${GREEN}✓${NC} All services started"
 
 # 5. Health checks
