@@ -35,7 +35,7 @@ services:
       context: ./services/fhir-server
       dockerfile: Dockerfile
     ports:
-      - "3001:3001"
+      - "3101:3001"
     environment:
       - NODE_ENV=development
       - PORT=3001
@@ -50,7 +50,7 @@ services:
       context: ./services/payment-gateway
       dockerfile: Dockerfile
     ports:
-      - "4000:4000"
+      - "4100:4000"
     environment:
       - NODE_ENV=development
       - PORT=4000
@@ -64,7 +64,7 @@ services:
       context: ./services/audit-logger
       dockerfile: Dockerfile
     ports:
-      - "5000:5000"
+      - "5100:5000"
     environment:
       - NODE_ENV=development
       - PORT=5000
