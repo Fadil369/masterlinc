@@ -34,6 +34,14 @@ const configSchema = z.object({
   HEALTHCARE_URL: z.string().default('https://brainsait-healthcare--fadil369.github.app'),
   OID_URL: z.string().default('https://brainsait-oid-integr--fadil369.github.app'),
   SBS_URL: z.string().default('https://brainsait-sbs-dynamic.brainsait-fadil.workers.dev'),
+
+  // InterSystems IRIS for Health
+  IRIS_ENABLED: z.string().default('true'),
+  IRIS_HOST: z.string().default('iris'),
+  IRIS_PORT: z.string().default('52773'),
+  IRIS_USERNAME: z.string().default('SuperUser'),
+  IRIS_PASSWORD: z.string().default('SYS'),
+  IRIS_FHIR_BASE_URL: z.string().optional(),
   
   // AI & NLP
   ANTHROPIC_API_KEY: z.string().optional(),

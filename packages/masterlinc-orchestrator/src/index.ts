@@ -15,6 +15,7 @@ import { SBSIntegration } from './services/sbs-integration.js';
 import { DatabaseManager } from './data/database.js';
 import { WorkflowEngine } from './workflows/workflow-engine.js';
 import { NlpService } from './services/nlp-service.js';
+import { IRISIntegration } from './services/iris-integration.js';
 import { RealtimeServer } from './features/websocket-server.js';
 import { EventBus } from './features/event-bus.js';
 import { AnalyticsEngine } from './features/analytics.js';
@@ -37,6 +38,7 @@ export class MasterLincOrchestrator {
   private oid: OIDIntegration;
   private sbs: SBSIntegration;
   private nlp: NlpService;
+  private iris: IRISIntegration;
   private workflow: WorkflowEngine;
   private websocket: RealtimeServer | null = null;
   private eventBus: EventBus;
@@ -51,6 +53,12 @@ export class MasterLincOrchestrator {
     this.oid = new OIDIntegration(this.registry);
     this.sbs = new SBSIntegration(this.registry, this.db);
     this.nlp = new NlpService(this.config.ANTHROPIC_API_KEY || '');
+    this.iris = new IRISIntegration({
+      baseUrl: this.config.IRIS_FHIR_BASE_URL,
+      username: this.config.IRIS_USERNAME,
+      password: this.config.IRIS_PASSWORD,
+      enabled: this.config.IRIS_ENABLED === 'true',
+    });
     this.workflow = new WorkflowEngine(
       this.basma,
       this.healthcare,
@@ -166,13 +174,21 @@ export class MasterLincOrchestrator {
     this.app.get('/health', async (req: Request, res: Response) => {
       const dbHealth = await this.db.healthCheck();
       const serviceHealth = this.registry.getStatistics();
+      const irisHealth = await this.iris.healthCheck();
 
       res.json({
         status: 'healthy',
         timestamp: new Date().toISOString(),
         database: dbHealth,
         services: serviceHealth,
+        iris_for_health: irisHealth,
       });
+    });
+
+    // IRIS for Health dedicated health endpoint
+    this.app.get('/api/iris/health', async (req: Request, res: Response) => {
+      const status = await this.iris.healthCheck();
+      res.status(status.reachable ? 200 : 503).json(status);
     });
 
     // Service registry endpoints
