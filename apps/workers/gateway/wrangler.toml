@@ -1,0 +1,75 @@
+name = "brainsait-gateway"
+main = "src/index.ts"
+compatibility_date = "2024-12-01"
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+ENVIRONMENT = "production"
+MASTERLINC_URL = "https://masterlinc-api.brainsait.cloud"
+SBS_URL = "https://sbs.brainsait.cloud"
+IRIS_FHIR_URL = "http://iris:52773/fhir/r4"
+RAG_URL = "http://rag:8000"
+
+# ──────────────────────────────────────────────────────────────────────────────
+# D1 — Serverless SQLite for audit logs, sessions, analytics, file metadata
+# ──────────────────────────────────────────────────────────────────────────────
+[[d1_databases]]
+binding = "DB"
+database_name = "brainsait-gateway"
+database_id = "your-d1-database-id"   # replace with: wrangler d1 create brainsait-gateway
+
+# ──────────────────────────────────────────────────────────────────────────────
+# KV — Edge key-value storage
+# ──────────────────────────────────────────────────────────────────────────────
+[[kv_namespaces]]
+binding = "SESSIONS"
+id = "your-sessions-kv-id"            # replace with: wrangler kv namespace create SESSIONS
+
+[[kv_namespaces]]
+binding = "CACHE"
+id = "your-cache-kv-id"               # replace with: wrangler kv namespace create CACHE
+
+[[kv_namespaces]]
+binding = "RATE_LIMIT"
+id = "your-rate-limit-kv-id"          # replace with: wrangler kv namespace create RATE_LIMIT
+
+# ──────────────────────────────────────────────────────────────────────────────
+# R2 — Object storage for medical files (DICOM, PDFs, reports)
+# ──────────────────────────────────────────────────────────────────────────────
+[[r2_buckets]]
+binding = "MEDICAL_FILES"
+bucket_name = "brainsait-medical-files"  # replace with: wrangler r2 bucket create brainsait-medical-files
+
+[[r2_buckets]]
+binding = "AUDIT_EXPORTS"
+bucket_name = "brainsait-audit-exports"
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Durable Objects — Stateful edge compute
+# ──────────────────────────────────────────────────────────────────────────────
+[[durable_objects.bindings]]
+name = "PRESENCE"
+class_name = "PresenceDO"
+
+[[durable_objects.bindings]]
+name = "NOTIFICATIONS"
+class_name = "NotificationsDO"
+
+[[migrations]]
+tag = "v1"
+new_classes = ["PresenceDO", "NotificationsDO"]
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Secrets (set via: wrangler secret put SECRET_NAME)
+# ──────────────────────────────────────────────────────────────────────────────
+# JWT_SECRET           — HS256 signing key for session tokens
+# IRIS_PASSWORD        — IRIS for Health admin password
+# NPHIES_API_KEY       — Saudi NPHIES API key
+# GEMINI_API_KEY       — Google Gemini for RAG embeddings
+# ANTHROPIC_API_KEY    — Claude for AI features
+
+[observability]
+enabled = true
+
+[triggers]
+crons = ["0 2 * * *"]   # daily analytics rollup at 02:00 UTC

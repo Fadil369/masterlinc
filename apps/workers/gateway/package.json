@@ -1,0 +1,21 @@
+{
+  "name": "@brainsait/gateway-worker",
+  "version": "1.0.0",
+  "description": "BrainSAIT Unified Gateway — Cloudflare Worker",
+  "private": true,
+  "scripts": {
+    "dev": "wrangler dev --local",
+    "deploy": "wrangler deploy",
+    "tail": "wrangler tail",
+    "type-check": "tsc --noEmit",
+    "db:migrate": "wrangler d1 execute brainsait-gateway --file=src/db/schema.sql"
+  },
+  "dependencies": {
+    "hono": "^4.6.3"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20241224.0",
+    "typescript": "^5.6.3",
+    "wrangler": "^3.99.0"
+  }
+}

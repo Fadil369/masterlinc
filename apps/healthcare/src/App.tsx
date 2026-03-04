@@ -29,6 +29,10 @@ import { SBSClaims } from './components/ecosystem/SBSClaims'
 import { OidDidConsole } from './components/ecosystem/OidDidConsole'
 import { BasmaVoiceConsole } from './components/ecosystem/BasmaVoiceConsole'
 import { NotionCommandCenter } from './components/ecosystem/NotionCommandCenter'
+import { IRISDashboard } from './components/ecosystem/IRISDashboard'
+import { RAGInterface } from './components/ecosystem/RAGInterface'
+import { UnifiedDashboard } from './components/ecosystem/UnifiedDashboard'
+import { MedicalFileManager } from './components/ecosystem/MedicalFileManager'
 
 const mockResults: SearchResult[] = [
   {
@@ -83,7 +87,7 @@ const mockResults: SearchResult[] = [
   }
 ]
 
-type View = 'directory' | 'live' | 'voice' | 'appointments' | 'messages' | 'intake' | 'doctor' | 'cdi' | 'rcm' | 'coding' | 'patients' | 'payments' | 'audit' | 'sbs' | 'oid' | 'basma' | 'notion'
+type View = 'directory' | 'live' | 'voice' | 'appointments' | 'messages' | 'intake' | 'doctor' | 'cdi' | 'rcm' | 'coding' | 'patients' | 'payments' | 'audit' | 'sbs' | 'oid' | 'basma' | 'notion' | 'iris' | 'rag' | 'platform' | 'files'
 
 function AppContent() {
   const [currentView, setCurrentView] = useState<View>('directory')
@@ -119,6 +123,10 @@ function AppContent() {
           case 'oid': content = <OidDidConsole />; break
           case 'basma': content = <BasmaVoiceConsole />; break
           case 'notion': content = <NotionCommandCenter />; break
+          case 'iris': content = <IRISDashboard />; break
+          case 'rag': content = <RAGInterface />; break
+          case 'platform': content = <UnifiedDashboard />; break
+          case 'files': content = <MedicalFileManager />; break
           default: content = (
             <div className="flex flex-1 overflow-hidden relative h-[calc(100vh-6rem)]">
                 <Sidebar />
@@ -233,7 +241,11 @@ function AppContent() {
                   { id: 'sbs', label: 'SBS Claims', icon: 'receipt', badge: 0 },
                   { id: 'oid', label: 'OID/DID', icon: 'qr_code', badge: 0 },
                   { id: 'basma', label: 'BASMA Voice', icon: 'call', badge: 0 },
-                  { id: 'notion', label: 'Notion Workspace', icon: 'description', badge: 0 }
+                  { id: 'notion', label: 'Notion Workspace', icon: 'description', badge: 0 },
+                  { id: 'platform', label: 'Platform Status', icon: 'monitor_heart', badge: 0 },
+                  { id: 'iris', label: 'IRIS / FHIR', icon: 'local_hospital', badge: 0 },
+                  { id: 'rag', label: 'RAG Assistant', icon: 'psychiatry', badge: 0 },
+                  { id: 'files', label: 'Medical Files', icon: 'folder_open', badge: 0 },
               ].map(item => (
                   <button
                     key={item.id}
