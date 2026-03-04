@@ -81,4 +81,27 @@ Return ONLY a JSON object with this structure:
       summary: 'Automated fallback analysis',
     };
   }
+
+  /**
+   * Determine medical department based on symptoms
+   */
+  determineDepartment(symptoms: string[]): string {
+    const map: Record<string, string> = {
+      chest: 'cardiology',
+      head: 'neurology',
+      bone: 'orthopedics',
+      joint: 'orthopedics',
+      skin: 'dermatology',
+      eye: 'ophthalmology',
+      tooth: 'dentistry',
+      teeth: 'dentistry'
+    };
+
+    for (const s of symptoms) {
+      for (const k in map) {
+        if (s.toLowerCase().includes(k)) return map[k];
+      }
+    }
+    return 'general-practice';
+  }
 }

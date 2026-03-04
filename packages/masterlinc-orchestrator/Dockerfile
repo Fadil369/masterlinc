@@ -1,44 +1,47 @@
-# MasterLinc Orchestrator - Production Dockerfile
-FROM node:20-alpine AS builder
+# Multi-stage build for MasterLinc Orchestrator
+
+FROM node:22-alpine AS builder
 
 WORKDIR /app
 
 # Copy package files
 COPY package*.json ./
-COPY packages/masterlinc-orchestrator/package*.json ./packages/masterlinc-orchestrator/
+COPY tsconfig.json ./
 
 # Install dependencies
-RUN npm ci --workspace=@brainsait/masterlinc-orchestrator
+RUN npm install
 
-# Copy source
-COPY packages/masterlinc-orchestrator ./packages/masterlinc-orchestrator
+# Copy source code
+COPY src ./src
 
 # Build
-RUN npm run build --workspace=@brainsait/masterlinc-orchestrator
+RUN npm run build
 
 # Production stage
-FROM node:20-alpine AS production
+FROM node:22-alpine
 
 WORKDIR /app
 
 # Install production dependencies only
 COPY package*.json ./
-COPY packages/masterlinc-orchestrator/package*.json ./packages/masterlinc-orchestrator/
-RUN npm ci --workspace=@brainsait/masterlinc-orchestrator --omit=dev
+RUN npm install --omit=dev
 
 # Copy built files
-COPY --from=builder /app/packages/masterlinc-orchestrator/dist ./packages/masterlinc-orchestrator/dist
+COPY --from=builder /app/dist ./dist
 
-# Security: non-root user
-RUN addgroup -g 1001 -S nodejs && adduser -S nodejs -u 1001
+# Create non-root user
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nodejs -u 1001 && \
+    chown -R nodejs:nodejs /app
+
 USER nodejs
+
+# Expose port
+EXPOSE 4000
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:3001/health || exit 1
+  CMD node -e "require('http').get('http://localhost:4000/health', (r) => { process.exit(r.statusCode === 200 ? 0 : 1); });" || exit 1
 
-EXPOSE 3001
-
-ENV NODE_ENV=production
-
-CMD ["node", "packages/masterlinc-orchestrator/dist/index.js"]
+# Start server
+CMD ["node", "dist/index.js"]

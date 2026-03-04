@@ -18,13 +18,16 @@ import { NlpService } from './services/nlp-service.js';
 import { RealtimeServer } from './features/websocket-server.js';
 import { EventBus } from './features/event-bus.js';
 import { AnalyticsEngine } from './features/analytics.js';
+import { fileURLToPath } from 'url';
+// Only run if executed directly
 
-const logger = pino({ 
+const logger = pino({
   name: 'masterlinc-orchestrator',
   level: process.env.LOG_LEVEL || 'info',
 });
 
-class MasterLincOrchestrator {
+export class MasterLincOrchestrator {
+  ;
   private app: express.Application;
   private config = loadConfig();
   private registry: ServiceRegistry;
@@ -77,7 +80,7 @@ class MasterLincOrchestrator {
 
       // Check all services health
       await this.registry.checkAllServicesHealth();
-      
+
       // Start health monitoring
       this.registry.startHealthMonitoring(
         parseInt(this.config.HEALTH_CHECK_INTERVAL),
@@ -350,7 +353,7 @@ class MasterLincOrchestrator {
       try {
         const startDate = req.query.startDate ? new Date(req.query.startDate as string) : new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
         const endDate = req.query.endDate ? new Date(req.query.endDate as string) : new Date();
-        
+
         const report = await this.analytics.generateReport(startDate, endDate);
         res.json(report);
       } catch (error: any) {
@@ -396,10 +399,10 @@ class MasterLincOrchestrator {
    */
   async shutdown(): Promise<void> {
     logger.info('Shutting down gracefully');
-    
+
     this.registry.stopHealthMonitoring();
     await this.db.close();
-    
+
     logger.info('Shutdown complete');
     process.exit(0);
   }
@@ -422,4 +425,8 @@ async function main() {
   }
 }
 
-main();
+// Only run if executed directly
+// Only run if executed directly
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  main();
+}

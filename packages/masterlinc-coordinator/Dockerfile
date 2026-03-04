@@ -2,22 +2,27 @@ FROM node:22-alpine
 
 WORKDIR /app
 
-# Copy the entire monorepo context
-COPY . .
+# Copy dependent packages
+COPY packages/deepseek-radiology ./packages/deepseek-radiology/
+COPY packages/radiolinc-agent ./packages/radiolinc-agent/
+COPY packages/masterlinc-coordinator ./packages/masterlinc-coordinator/
 
-# Navigate to the package
-WORKDIR /app/packages/masterlinc-coordinator
-
-# Install dependencies
-# We install locally here. Since we copied the parent directories, 
-# dependencies like "file:../deepseek-radiology" will resolve correctly.
+# Build dependencies
+WORKDIR /app/packages/deepseek-radiology
 RUN npm install
+RUN npm run build
 
-# Build TypeScript
+WORKDIR /app/packages/radiolinc-agent
+RUN npm install
+RUN npm run build
+
+# Build service
+WORKDIR /app/packages/masterlinc-coordinator
+RUN npm install
 RUN npm run build
 
 # Expose port
 EXPOSE 4000
 
 # Start service
-CMD ["npm", "start"]
+CMD ["node", "dist/index.js"]

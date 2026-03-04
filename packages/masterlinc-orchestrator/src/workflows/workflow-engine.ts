@@ -79,7 +79,7 @@ export class WorkflowEngine {
     private sbs: SBSIntegration,
     private db: DatabaseManager,
     private nlp: NlpService,
-  ) {}
+  ) { }
 
   /**
    * Start new workflow from incoming call
@@ -88,7 +88,7 @@ export class WorkflowEngine {
     logger.info({ callId, from, domain }, 'Starting new workflow from call');
 
     const workflowId = `wf-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    
+
     const workflow: WorkflowState = {
       workflowId,
       domain,
@@ -138,7 +138,7 @@ export class WorkflowEngine {
 
       // 3. Lookup or create patient
       let patient = await this.healthcare.getPatientByPhone(from);
-      
+
       if (!patient) {
         logger.info({ phone: from }, 'New patient - creating record');
         patient = await this.healthcare.upsertPatient({
@@ -161,7 +161,7 @@ export class WorkflowEngine {
           metadata: { phone: from },
         });
         workflow.patientOID = oidRecord.oid;
-        
+
         await this.healthcare.upsertPatient({
           ...patient,
           oid: oidRecord.oid,
@@ -200,7 +200,7 @@ export class WorkflowEngine {
 
     try {
       const triage = workflow.data.triage!;
-      
+
       // Perform deeper AI triage via healthcare integration
       const triageResult = await this.healthcare.performTriage({
         patientId: workflow.patientId!,
@@ -239,7 +239,7 @@ export class WorkflowEngine {
 
     try {
       const severity = workflow.data.triage?.severity || 'routine';
-      const department = this.nlpSelectDepartment(workflow.data.triage?.symptoms || []);
+      const department = this.nlp.determineDepartment(workflow.data.triage?.symptoms || []);
 
       const availableSlots = await this.healthcare.checkAvailability({
         department,
@@ -294,12 +294,12 @@ export class WorkflowEngine {
     // For now, we analyze and complete
     const transcript = await this.basma.getCallTranscript(workflow.data.call!.callId);
     const analysis = await this.nlp.analyzeTranscript(transcript);
-    
+
     workflow.data.analysis = {
       entities: analysis.entities,
       recommendation: analysis.summary,
     };
-    
+
     await this.transitionPhase(workflow, 'completed', 'generic_analysis_completed');
     workflow.status = 'completed';
     await this.saveWorkflowState(workflow);
@@ -314,7 +314,7 @@ export class WorkflowEngine {
 
     workflow.status = 'in_progress';
     await this.transitionPhase(workflow, 'claims', 'service_completed');
-    
+
     try {
       const claim = await this.sbs.createClaim({
         patientOID: workflow.patientOID!,
@@ -385,15 +385,5 @@ export class WorkflowEngine {
     return { active: this.activeWorkflows.size };
   }
 
-  private nlpSelectDepartment(symptoms: string[]): string {
-    const map: Record<string, string> = {
-      chest: 'cardiology', head: 'neurology', bone: 'orthopedics', joint: 'orthopedics'
-    };
-    for (const s of symptoms) {
-      for (const k in map) {
-        if (s.toLowerCase().includes(k)) return map[k];
-      }
-    }
-    return 'general-practice';
-  }
+
 }

@@ -73,3 +73,7 @@ services/*/dist/
 services/*/node_modules/
 file.md
 *.log
+
+# Ansible (infrastructure - managed separately)
+ansible/
+

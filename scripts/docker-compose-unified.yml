@@ -50,10 +50,26 @@ services:
   # NEW MASTERLINC AI SERVICES
   # ============================================
 
+  masterlinc-orchestrator:
+    build:
+      context: ../packages/masterlinc-orchestrator
+      dockerfile: Dockerfile
+    container_name: masterlinc-orchestrator
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:4002:4000"
+    environment:
+      - NODE_ENV=production
+      - PORT=4000
+    depends_on:
+      - redis
+    networks:
+      - brainsait
+
   masterlinc-coordinator:
     build:
-      context: ./masterlinc/packages/masterlinc-coordinator
-      dockerfile: Dockerfile
+      context: ../
+      dockerfile: packages/masterlinc-coordinator/Dockerfile
     container_name: masterlinc-coordinator
     restart: unless-stopped
     ports:
@@ -112,7 +128,7 @@ services:
     ports:
       - "127.0.0.1:9090:9090"
     volumes:
-      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./monitoring/prometheus-config.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus-data:/prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
