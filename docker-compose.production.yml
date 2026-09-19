@@ -17,7 +17,7 @@ services:
       - REDIS_URL=redis://redis:6379
       - SBS_EMBEDDED=true
       - JWT_SECRET=${JWT_SECRET}
-      - CORS_ORIGINS=https://brainsait.de,https://hub.brainsait.de,https://api.brainsait.de
+      - CORS_ORIGINS=https://brainsait.de,https://hub.brainsait.org,https://api.brainsait.de
     depends_on:
       - postgres
       - redis
